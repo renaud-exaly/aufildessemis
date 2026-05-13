@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------
+   Au fil des semis — design tokens
+   Palette "potager moderne" : vert profond, crème, touches tomate.
+   Atmosphère : carnet maraîcher éditorial, lecture lente.
+--------------------------------------------------------------- */
+
+@theme {
+  /* Couleurs — palette brand */
+  --color-green-deep: #2d4a3e;
+  --color-green-sage: #7a8b6f;
+  --color-green-soft: #c8d3bc;
+  --color-cream: #f5f1e8;
+  --color-cream-warm: #faf6ed;
+  --color-tomato: #c84b31;
+  --color-tomato-soft: #e9a89a;
+  --color-sand: #d4b895;
+  --color-sand-soft: #e8d8bf;
+  --color-ink: #1f2a24;
+  --color-ink-soft: #4a574f;
+
+  /* Couleurs sémantiques (alias) */
+  --color-background: var(--color-cream);
+  --color-surface: var(--color-cream-warm);
+  --color-foreground: var(--color-ink);
+  --color-muted: var(--color-ink-soft);
+  --color-accent: var(--color-tomato);
+  --color-leaf: var(--color-green-deep);
+
+  /* Typographie */
+  --font-serif: var(--font-fraunces), 'Fraunces', 'Georgia', serif;
+  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
+
+  /* Radius doux */
+  --radius-soft: 0.75rem;
+  --radius-pillow: 1.25rem;
+
+  /* Ombres très diffuses */
+  --shadow-leaf: 0 16px 40px -20px rgba(45, 74, 62, 0.22);
+  --shadow-warm: 0 12px 32px -16px rgba(31, 42, 36, 0.18);
+
+  /* Animations douces */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------
+   Base (en @layer pour ne pas dominer les utilities Tailwind)
+--------------------------------------------------------------- */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--color-green-deep);
+    font-variation-settings: 'opsz' 144, 'SOFT' 50;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    color: var(--color-green-deep);
+    font-variation-settings: 'opsz' 48, 'SOFT' 50;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 200ms var(--ease-soft), color 200ms var(--ease-soft);
+  }
+
+  a:hover {
+    opacity: 0.85;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  ::selection {
+    background: var(--color-tomato-soft);
+    color: var(--color-ink);
+  }
+}
+
+/* Helper utility class (rare — préférer Tailwind) */
+.font-serif-display {
+  font-family: var(--font-serif);
+}

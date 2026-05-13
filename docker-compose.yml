@@ -1,0 +1,122 @@
+# Production stack for Au fil des semis.
+#
+# Default profile (no flag) — derrière un reverse proxy externe (nginx, Traefik,
+# Cloudflare Tunnel…) :
+#   docker compose --env-file .env build
+#   docker compose --env-file .env up -d
+#   → app accessible sur 127.0.0.1:${APP_PORT:-3011}
+#
+# Profil standalone — pour un serveur greenfield avec Caddy + Let's Encrypt :
+#   docker compose --profile standalone --env-file .env up -d
+#   → Caddy bind 80/443 et proxy vers l'app
+#   → cf. Caddyfile.example à copier en ./Caddyfile
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/renaud-exaly/au-fil-des-semis:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      RESEND_TO_EMAIL: ${RESEND_TO_EMAIL:-}
+      RESEND_AUDIENCE_ID: ${RESEND_AUDIENCE_ID:-}
+      CRON_SECRET: ${CRON_SECRET}
+    volumes:
+      - media:/app/media
+    ports:
+      # Loopback uniquement — le reverse proxy du host forwarde vers ce port.
+      - '127.0.0.1:${APP_PORT:-3011}:3000'
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cron container — frappe /api/cron/reminders chaque jour à 8h (heure container).
+  cron:
+    image: alpine:3.20
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    command: >-
+      sh -c "
+        apk add --no-cache curl tzdata > /dev/null
+        cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime
+        echo 'Europe/Brussels' > /etc/timezone
+        echo '0 8 * * * curl -sf -H \"Authorization: Bearer $$CRON_SECRET\" http://app:3000/api/cron/reminders | tee /proc/1/fd/1' > /etc/crontabs/root
+        crond -f -l 2
+      "
+
+  # One-shot pour appliquer les migrations Payload contre le Postgres en cours.
+  # Usage :
+  #   docker compose --env-file .env --profile migrate run --rm migrate
+  # Génère les migrations en local avec :
+  #   pnpm payload migrate:create -- <name>
+  # puis commit src/migrations/* et re-run sur le serveur.
+  migrate:
+    profiles: [migrate]
+    image: node:24.15-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >-
+      sh -c "
+        set -e
+        apk add --no-cache libc6-compat python3 make g++ > /dev/null
+        corepack enable && corepack prepare pnpm@10.32.1 --activate
+        pnpm install --frozen-lockfile --prod=false > /dev/null
+        pnpm payload migrate
+      "
+
+  caddy:
+    profiles: [standalone]
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pg_data:
+  media:
+  caddy_data:
+  caddy_config:
