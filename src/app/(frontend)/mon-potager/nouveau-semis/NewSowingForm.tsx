@@ -4,6 +4,8 @@ import { useActionState } from 'react'
 
 import { createSowingAction } from '../actions'
 import { AuthField, FormMessage, SubmitButton } from '@/components/AuthShell'
+import { Combobox } from '@/components/Combobox'
+import { DatePicker } from '@/components/DatePicker'
 
 type PlantOption = { id: string; name: string }
 
@@ -22,32 +24,20 @@ export function NewSowingForm({ plants }: { plants: PlantOption[] }) {
         autoComplete="off"
       />
 
-      <label className="block">
-        <span className="text-xs font-medium uppercase tracking-[0.16em] text-ink-soft">
-          Plante
-        </span>
-        <select
-          name="plant"
-          required
-          defaultValue=""
-          className="mt-2 w-full rounded-soft border border-green-soft/60 bg-cream-warm px-4 py-3 font-sans text-base text-ink focus:border-green-deep focus:outline-none focus:ring-2 focus:ring-green-deep/30"
-        >
-          <option value="" disabled>
-            — Choisis dans la bibliothèque —
-          </option>
-          {plants.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <Combobox
+        name="plant"
+        label="Plante"
+        placeholder="Tape pour chercher (tomate, basilic…)"
+        required
+        options={plants.map((p) => ({ value: p.id, label: p.name }))}
+        emptyMessage="Aucune plante de ce nom dans la bibliothèque."
+      />
 
-      <AuthField
-        label="Date de démarrage"
+      <DatePicker
         name="startedAt"
-        type="date"
+        label="Date de démarrage"
         defaultValue={today}
+        required
       />
 
       <label className="block">

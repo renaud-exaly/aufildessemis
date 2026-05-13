@@ -1,11 +1,8 @@
-import Link from 'next/link'
-
+import { CalendarPicker } from './CalendarPicker'
 import { Container } from '@/components/Container'
-import { SowingWindowBadge } from '@/components/SowingWindowBadge'
 import { MONTHS } from '@/lib/stages'
 import { currentMonth, isInWindow } from '@/lib/months'
 import { getPayloadClient } from '@/lib/payload'
-
 
 export const metadata = {
   title: 'Calendrier de semis',
@@ -18,6 +15,21 @@ type Plant = {
   slug: string
   name: string
   sowingWindow?: { startMonth?: string; endMonth?: string; note?: string }
+}
+
+const SHORT_MONTHS: Record<string, string> = {
+  '01': 'Jan',
+  '02': 'Fév',
+  '03': 'Mars',
+  '04': 'Avr',
+  '05': 'Mai',
+  '06': 'Juin',
+  '07': 'Juil',
+  '08': 'Août',
+  '09': 'Sept',
+  '10': 'Oct',
+  '11': 'Nov',
+  '12': 'Déc',
 }
 
 export default async function CalendrierPage() {
@@ -36,8 +48,10 @@ export default async function CalendrierPage() {
   }
 
   const month = currentMonth()
-  const plantsByMonth = MONTHS.map((m) => ({
-    ...m,
+  const buckets = MONTHS.map((m) => ({
+    value: m.value,
+    label: m.label,
+    short: SHORT_MONTHS[m.value] ?? m.label,
     plants: plants.filter((p) =>
       p.sowingWindow?.startMonth && p.sowingWindow?.endMonth
         ? isInWindow(m.value, p.sowingWindow.startMonth, p.sowingWindow.endMonth)
@@ -64,60 +78,7 @@ export default async function CalendrierPage() {
 
       <section className="py-16">
         <Container>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {plantsByMonth.map((m) => {
-              const active = m.value === month
-              return (
-                <div
-                  key={m.value}
-                  className={`rounded-pillow border p-6 ${
-                    active
-                      ? 'border-tomato/40 bg-tomato/[0.04]'
-                      : 'border-green-soft/40 bg-surface'
-                  }`}
-                >
-                  <div className="flex items-baseline justify-between">
-                    <h2 className="font-serif text-2xl text-green-deep">
-                      {m.label}
-                    </h2>
-                    {active ? (
-                      <span className="text-xs uppercase tracking-[0.14em] text-tomato">
-                        Ce mois-ci
-                      </span>
-                    ) : null}
-                  </div>
-                  {m.plants.length ? (
-                    <ul className="mt-4 space-y-2">
-                      {m.plants.map((p) => (
-                        <li key={p.id}>
-                          <Link
-                            href={`/bibliotheque/${p.slug}`}
-                            className="flex items-center justify-between gap-3 rounded-soft px-3 py-2 transition-colors hover:bg-cream"
-                          >
-                            <span className="font-serif text-lg text-green-deep">
-                              {p.name}
-                            </span>
-                            {p.sowingWindow?.startMonth &&
-                            p.sowingWindow?.endMonth ? (
-                              <SowingWindowBadge
-                                startMonth={p.sowingWindow.startMonth}
-                                endMonth={p.sowingWindow.endMonth}
-                                highlightActive={false}
-                              />
-                            ) : null}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-4 text-sm text-ink-soft">
-                      Rien à semer ce mois-ci pour le moment.
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          <CalendarPicker months={buckets} initialMonth={month} />
         </Container>
       </section>
     </>

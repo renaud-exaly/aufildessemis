@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from 'react'
 
 import { addSowingUpdateAction } from '../actions'
 import { FormMessage, SubmitButton } from '@/components/AuthShell'
+import { DatePicker } from '@/components/DatePicker'
 
 type StageOption = { value: string; label: string }
 
@@ -33,18 +34,12 @@ export function AddUpdateForm({
       <input type="hidden" name="sowing" value={sowingId} />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="block">
-          <span className="text-xs font-medium uppercase tracking-[0.16em] text-ink-soft">
-            Date
-          </span>
-          <input
-            type="date"
-            name="date"
-            defaultValue={today}
-            required
-            className="mt-2 w-full rounded-soft border border-green-soft/60 bg-cream px-4 py-3 font-sans text-base text-ink focus:border-green-deep focus:outline-none focus:ring-2 focus:ring-green-deep/30"
-          />
-        </label>
+        <DatePicker
+          name="date"
+          label="Date"
+          defaultValue={today}
+          required
+        />
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-[0.16em] text-ink-soft">
             Étape (optionnel)

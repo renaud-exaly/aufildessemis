@@ -17,7 +17,7 @@ export default function AProposPage() {
 
         <div className="prose prose-stone mt-12 max-w-prose leading-relaxed text-ink">
           <p>
-            <em>Au fil des semis</em> est né d&apos;une envie simple&nbsp;:
+            <em>Au fil des semis</em>{' '}est né d&apos;une envie simple&nbsp;:
             garder une trace de ce qui pousse, d&apos;une saison à l&apos;autre,
             et partager ce qu&apos;on apprend en route. Un peu comme un journal
             de bord — mais ouvert, parce que le jardin se vit mieux à
