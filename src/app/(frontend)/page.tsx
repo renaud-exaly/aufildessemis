@@ -5,6 +5,7 @@ import { PlantCard } from '@/components/PlantCard'
 import { SowingCard } from '@/components/SowingCard'
 import { getPayloadClient } from '@/lib/payload'
 import { currentMonth, isInWindow, monthLabel } from '@/lib/months'
+import { getLatestSowingPhotos, plantCoverFromSowing } from '@/lib/sowings'
 
 
 type PlantLite = {
@@ -66,6 +67,14 @@ export default async function HomePage() {
     getActivePlants(),
     getRecentSowings(),
   ])
+  const photoMap = await getLatestSowingPhotos(
+    recentSowings.map((s) => s.id),
+  )
+  const recentSowingsWithCover = recentSowings.map((s) => ({
+    ...s,
+    latestPhoto:
+      photoMap.get(String(s.id)) ?? plantCoverFromSowing(s) ?? undefined,
+  }))
   const month = currentMonth()
   const year = new Date().getFullYear()
 
@@ -174,9 +183,9 @@ export default async function HomePage() {
               Tout le journal →
             </Link>
           </div>
-          {recentSowings.length ? (
+          {recentSowingsWithCover.length ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {recentSowings.map((sowing) => (
+              {recentSowingsWithCover.map((sowing) => (
                 <SowingCard key={sowing.id} sowing={sowing} />
               ))}
             </div>
