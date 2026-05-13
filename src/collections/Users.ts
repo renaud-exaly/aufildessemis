@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminFieldOnly, adminsOnly, anyone, staffOnly } from '@/lib/access'
+import { adminFieldOnly, adminsOnly, anyone } from '@/lib/access'
 
 /**
  * Champs visibles seulement au user lui-même + staff (admin/mod).

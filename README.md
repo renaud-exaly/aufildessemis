@@ -12,7 +12,7 @@ Voir [`BRAINSTORM.md`](./BRAINSTORM.md) pour le cadrage complet (audience, modè
 - **Payload CMS 3** (intégré dans la même app)
 - **PostgreSQL** (container)
 - **Resend** (email transactionnel + newsletter Broadcasts)
-- **Caddy** (reverse proxy + TLS auto)
+- **nginx + certbot** (reverse proxy global du VPS, mutualisé avec d'autres projets) + Cloudflare en edge
 - **Docker + docker-compose** (déploiement VPS OVH)
 - **Vitest** (tests intégration) + **Playwright** (e2e)
 
