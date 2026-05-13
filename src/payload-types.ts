@@ -278,6 +278,19 @@ export interface Plant {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Plantes à éviter à côté de celle-ci (mêmes maladies, allélopathie, concurrence, etc.).
+   */
+  incompatibles?:
+    | {
+        plant: number | Plant;
+        /**
+         * Ex. « mêmes maladies (mildiou) », « allélopathie », « inhibe la fixation d'azote »
+         */
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   relatedTips?: (number | Tip)[] | null;
   updatedAt: string;
   createdAt: string;
@@ -713,6 +726,13 @@ export interface PlantsSelect<T extends boolean = true> {
         id?: T;
       };
   companions?:
+    | T
+    | {
+        plant?: T;
+        note?: T;
+        id?: T;
+      };
+  incompatibles?:
     | T
     | {
         plant?: T;

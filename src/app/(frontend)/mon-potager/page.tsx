@@ -1,11 +1,79 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { deleteMyAccountAction, signOutAction } from './actions'
 import { DangerZone } from './DangerZone'
+import { ChangePasswordForm } from './ChangePasswordForm'
 import { Container } from '@/components/Container'
-import { SowingCard } from '@/components/SowingCard'
 import { getSession } from '@/lib/auth'
 import { getPayloadClient } from '@/lib/payload'
+import { SOWING_STAGES } from '@/lib/stages'
+
+const stageLabel = (value?: string | null) =>
+  value ? SOWING_STAGES.find((s) => s.value === value)?.label ?? value : null
+
+type OwnerSowing = {
+  id: string | number
+  name: string
+  currentStage?: string | null
+  visibility?: string | null
+  startedAt?: string | Date | null
+  plant?: { name?: string | null } | string | number
+  latestPhoto?: { url?: string | null; alt?: string | null }
+}
+
+function OwnerSowingCard({ sowing }: { sowing: OwnerSowing }) {
+  const plantName =
+    typeof sowing.plant === 'object' && sowing.plant ? sowing.plant.name : null
+  const stage = stageLabel(sowing.currentStage)
+  return (
+    <Link
+      href={`/mon-potager/${sowing.id}`}
+      className="group flex flex-col overflow-hidden rounded-pillow bg-surface shadow-warm transition-shadow hover:shadow-leaf"
+    >
+      <div className="aspect-[5/4] relative bg-sand-soft">
+        {sowing.latestPhoto?.url ? (
+          <Image
+            src={sowing.latestPhoto.url}
+            alt={sowing.latestPhoto.alt ?? ''}
+            fill
+            sizes="(min-width: 768px) 33vw, 100vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-5xl text-green-sage/40">
+            🌱
+          </div>
+        )}
+        {stage ? (
+          <span className="absolute left-3 top-3 rounded-full bg-cream/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-green-deep backdrop-blur">
+            {stage}
+          </span>
+        ) : null}
+        {sowing.visibility === 'private' ? (
+          <span className="absolute right-3 top-3 rounded-full bg-ink/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-cream backdrop-blur">
+            Privé
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-5">
+        <h3 className="font-serif text-xl text-green-deep">{sowing.name}</h3>
+        <p className="text-xs text-ink-soft">
+          {plantName ?? ''}
+          {sowing.startedAt
+            ? `${plantName ? ' · ' : ''}depuis ${new Date(
+                sowing.startedAt,
+              ).toLocaleDateString('fr-BE', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}`
+            : ''}
+        </p>
+      </div>
+    </Link>
+  )
+}
 
 export const metadata = {
   title: 'Mon potager',
@@ -93,37 +161,46 @@ export default async function MonPotagerPage() {
         </div>
 
         <div className="mt-12">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="font-serif text-3xl text-green-deep">
+              {sowings.length ? 'Tes semis en cours' : 'Ton carnet est vide'}
+            </h2>
+            <Link
+              href="/mon-potager/nouveau-semis"
+              className="inline-flex items-center gap-2 rounded-full bg-tomato px-5 py-2.5 text-sm font-semibold text-white tracking-[0.04em] transition-colors hover:bg-[#a83b25]"
+            >
+              + Nouveau lot
+            </Link>
+          </div>
+
           {sowings.length ? (
-            <>
-              <h2 className="font-serif text-3xl text-green-deep">
-                Tes semis en cours
-              </h2>
-              <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {sowings.map((sowing) => (
-                  <SowingCard key={sowing.id} sowing={sowing} />
-                ))}
-              </div>
-            </>
+            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {sowings.map((sowing) => (
+                <OwnerSowingCard key={sowing.id} sowing={sowing} />
+              ))}
+            </div>
           ) : (
-            <div className="rounded-pillow border border-green-soft/40 bg-cream-warm p-12 text-center">
+            <div className="mt-6 rounded-pillow border border-green-soft/40 bg-cream-warm p-12 text-center">
               <p className="font-serif text-2xl text-green-deep">
                 Pas encore de semis dans ton carnet.
               </p>
               <p className="mx-auto mt-4 max-w-prose text-ink-soft">
                 Commence par ajouter ton premier lot — un nom, une plante de la
-                bibliothèque, et c&apos;est parti. (L&apos;interface
-                d&apos;ajout depuis le site arrive bientôt — en attendant tu
-                peux passer par{' '}
-                <Link
-                  href="/admin"
-                  className="text-tomato underline underline-offset-4"
-                >
-                  l&apos;admin
-                </Link>
-                .)
+                bibliothèque, et c&apos;est parti.
               </p>
             </div>
           )}
+        </div>
+
+        {/* Sécurité — changement de mot de passe */}
+        <div className="mt-20 max-w-xl">
+          <h2 className="font-serif text-3xl text-green-deep">Mon compte</h2>
+          <p className="mt-2 text-sm text-ink-soft">
+            Change ton mot de passe quand tu veux.
+          </p>
+          <div className="mt-6 rounded-pillow border border-green-soft/40 bg-cream-warm p-6">
+            <ChangePasswordForm />
+          </div>
         </div>
 
         <DangerZone deleteAction={deleteMyAccountAction} />

@@ -176,15 +176,15 @@ export default async function PlantPage({
           >
             ← Bibliothèque
           </Link>
-          <div className="mt-8 grid gap-12 md:grid-cols-[1fr,1.2fr] md:items-start">
-            <div className="aspect-square relative overflow-hidden rounded-pillow bg-sand-soft">
+          <div className="mt-8 grid gap-12 md:grid-cols-[auto,1fr] md:items-start">
+            <div className="aspect-square relative w-full max-w-[360px] overflow-hidden rounded-pillow bg-sand-soft">
               {cover?.url ? (
                 <Image
                   src={cover.url}
                   alt={cover.alt ?? ''}
                   fill
                   priority
-                  sizes="(min-width: 768px) 45vw, 100vw"
+                  sizes="(min-width: 768px) 360px, 100vw"
                   className="object-cover"
                 />
               ) : (
