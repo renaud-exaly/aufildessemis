@@ -158,11 +158,11 @@ export default async function PlantPage({
       ? plant.coverImage
       : null
 
-  const tips = Array.isArray(plant.relatedTips)
-    ? plant.relatedTips.filter(
-        (t: unknown): t is { slug: string; title: string } =>
-          typeof t === 'object' && t !== null && 'slug' in t,
-      )
+  type ResolvedTip = { slug: string; title: string }
+  const tips: ResolvedTip[] = Array.isArray(plant.relatedTips)
+    ? (plant.relatedTips.filter(
+        (t) => typeof t === 'object' && t !== null && 'slug' in t,
+      ) as unknown as ResolvedTip[])
     : []
 
   return (

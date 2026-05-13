@@ -38,10 +38,7 @@ export const SowingUpdates: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, req, operation }) => {
-        // Maintient `Sowings.currentStage` à jour quand une update est créée
-        // ou modifiée avec un stage non nul.
-        if (operation === 'delete') return
+      async ({ doc, req }) => {
         if (!doc.stage || !doc.sowing) return
         try {
           await req.payload.update({

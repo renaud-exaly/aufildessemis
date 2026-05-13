@@ -68,7 +68,7 @@ export async function runReminders(payload: Payload): Promise<ReminderResult> {
     depth: 2,
   })
 
-  for (const sowing of sowings as Array<Record<string, unknown>>) {
+  for (const sowing of sowings as unknown as Array<Record<string, unknown>>) {
     result.scanned++
     try {
       const owner = sowing.owner as

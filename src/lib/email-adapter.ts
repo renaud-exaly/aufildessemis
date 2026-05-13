@@ -25,7 +25,7 @@ export function buildResendEmailAdapter(): EmailAdapter | undefined {
         throw new Error('Resend client missing — RESEND_API_KEY not set')
       }
       const to = Array.isArray(message.to)
-        ? message.to.filter((v): v is string => typeof v === 'string')
+        ? message.to.filter((v: unknown): v is string => typeof v === 'string')
         : typeof message.to === 'string'
           ? [message.to]
           : []

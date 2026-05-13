@@ -30,12 +30,26 @@ export async function submitReportAction(
   const targetCollection = formData.get(
     'targetCollection',
   ) as ReportTargetCollection | null
-  const targetId = formData.get('targetId')
-  const reason = String(formData.get('reason') ?? '')
+  const targetIdRaw = formData.get('targetId')
+  const reasonRaw = String(formData.get('reason') ?? '')
   const note = String(formData.get('note') ?? '')
 
-  if (!targetCollection || !targetId || !reason) {
+  const ALLOWED_REASONS = [
+    'spam',
+    'inappropriate',
+    'harassment',
+    'misinformation',
+    'other',
+  ] as const
+  const reason = ALLOWED_REASONS.find((r) => r === reasonRaw)
+
+  if (!targetCollection || !targetIdRaw || !reason) {
     return { ok: false, error: 'Informations manquantes.' }
+  }
+
+  const targetId = Number(targetIdRaw)
+  if (!Number.isFinite(targetId)) {
+    return { ok: false, error: 'Cible invalide.' }
   }
 
   try {
@@ -43,11 +57,11 @@ export async function submitReportAction(
     await payload.create({
       collection: 'reports',
       data: {
-        target: { relationTo: targetCollection, value: targetId as string },
+        target: { relationTo: targetCollection, value: targetId },
         reason,
         note: note || undefined,
         status: 'open',
-        reporter: session.id,
+        reporter: Number(session.id),
       },
       overrideAccess: false,
       user: { ...session, collection: 'users' },

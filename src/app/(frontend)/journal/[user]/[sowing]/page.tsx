@@ -120,13 +120,7 @@ export default async function SowingDetailPage({
         <Container>
           {updates.length ? (
             <ol className="relative space-y-12 border-l border-green-soft/60 pl-8">
-              {updates.map((u: {
-                id: string | number
-                date?: string
-                stage?: string | null
-                note?: unknown
-                photos?: Array<{ image?: { url?: string | null; alt?: string | null } | null }>
-              }) => (
+              {updates.map((u) => (
                 <li key={u.id} className="relative">
                   <span
                     aria-hidden

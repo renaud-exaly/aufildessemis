@@ -123,7 +123,8 @@ export const Users: CollectionConfig = {
       return user.id === id
     },
     delete: adminsOnly,
-    admin: staffOnly,
+    admin: ({ req: { user } }) =>
+      user?.role === 'admin' || user?.role === 'moderator',
   },
   fields: [
     {
