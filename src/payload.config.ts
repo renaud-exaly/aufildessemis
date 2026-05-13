@@ -48,17 +48,48 @@ export default buildConfig({
       handler: async (req) => {
         const user = req.user
         const cookieHeader = req.headers?.get?.('cookie') ?? null
-        const cookieNames = cookieHeader
-          ? cookieHeader.split(';').map((c) => c.trim().split('=')[0])
-          : []
+        const tokenMatch = cookieHeader?.match(/payload-token=([^;]+)/)
+        const token = tokenMatch?.[1]
+
+        let jwtDebug: Record<string, unknown> = {}
+        if (token) {
+          try {
+            const parts = token.split('.')
+            jwtDebug.parts = parts.length
+            if (parts.length === 3) {
+              const payload = JSON.parse(
+                Buffer.from(parts[1], 'base64url').toString('utf8'),
+              )
+              jwtDebug.payload = {
+                id: payload.id,
+                email: payload.email,
+                collection: payload.collection,
+                exp: payload.exp,
+                expDate: payload.exp
+                  ? new Date(payload.exp * 1000).toISOString()
+                  : null,
+                iat: payload.iat,
+                sid: payload.sid,
+                expiredNow: payload.exp
+                  ? payload.exp * 1000 < Date.now()
+                  : null,
+              }
+            }
+          } catch (e) {
+            jwtDebug.decodeError = (e as Error).message
+          }
+        }
+
         if (!user) {
           return Response.json(
             {
               user: null,
               debug: {
                 cookieHeaderPresent: !!cookieHeader,
-                cookieNames,
-                hasPayloadToken: cookieNames.includes('payload-token'),
+                hasPayloadToken: !!token,
+                jwt: jwtDebug,
+                serverNow: new Date().toISOString(),
+                serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
               },
             },
             { status: 401 },
