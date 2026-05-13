@@ -1,0 +1,29 @@
+node_modules
+**/node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+
+# Outil dev local — pas dans l'image prod
+mcp
+
+# Tests
+tests
+playwright-report
+test-results
+.playwright
+
+# Doc / dev
+BRAINSTORM.md
+DEPLOY.md
+README.md
+deploy
+assets
+
+.DS_Store
+*.log
+coverage
+.vscode
+.idea
