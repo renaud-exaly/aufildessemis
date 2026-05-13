@@ -25,46 +25,47 @@ async function getPlant(slug: string) {
   return docs[0] ?? null
 }
 
+type Pairing = { plant: PlantLite | string | number; note?: string | null }
 type PlantLite = {
   id: string | number
   slug: string
   name: string
   latinName?: string | null
   coverImage?: { url?: string | null; alt?: string | null } | string | null
-  companions?: Array<{
-    plant: PlantLite | string | number
-    note?: string | null
-  }>
+  companions?: Pairing[]
+  incompatibles?: Pairing[]
 }
 
 /**
- * Renvoie les compagnons d'une plante de manière **bi-directionnelle** :
- * - direct : ceux que cette plante a listés
- * - reverse : ceux qui ont listé cette plante (la note vient de leur côté)
+ * Lecture bi-directionnelle d'un champ d'associations (companions ou
+ * incompatibles) sur une plante :
+ *  - direct : entrées listées par CETTE plante
+ *  - reverse : entrées d'autres plantes qui mentionnent CELLE-ci
  * Dédupliqué par slug, la note de l'entrée directe l'emporte si conflit.
  */
-async function getCompanions(plantId: string | number): Promise<Companion[]> {
+async function getPairings(
+  plantId: string | number,
+  field: 'companions' | 'incompatibles',
+): Promise<Companion[]> {
   try {
     const payload = await getPayloadClient()
 
-    // 1. Recharge la plante avec depth=2 pour résoudre companions[].plant
     const own = (await payload.findByID({
       collection: 'plants',
       id: plantId,
       depth: 2,
     })) as PlantLite
 
-    // 2. Plantes qui listent celle-ci dans leur tableau
     const { docs: reverseDocs } = await payload.find({
       collection: 'plants',
-      where: { 'companions.plant': { equals: plantId } },
+      where: { [`${field}.plant`]: { equals: plantId } },
       limit: 50,
       depth: 1,
     })
 
     const map = new Map<string, Companion>()
 
-    for (const c of own.companions ?? []) {
+    for (const c of (own[field] ?? []) as Pairing[]) {
       const p = c.plant
       if (!p || typeof p !== 'object' || !p.slug) continue
       const img =
@@ -80,8 +81,7 @@ async function getCompanions(plantId: string | number): Promise<Companion[]> {
 
     for (const r of reverseDocs as PlantLite[]) {
       if (map.has(r.slug)) continue
-      // Note vient de l'entrée que r a sur la plante courante
-      const matching = r.companions?.find((c) => {
+      const matching = (r[field] ?? []).find((c: Pairing) => {
         const p = c.plant
         return (
           (typeof p === 'object' && p?.id === plantId) || p === plantId
@@ -148,9 +148,10 @@ export default async function PlantPage({
   const plant = await getPlant(slug)
   if (!plant) notFound()
 
-  const [sowings, companions] = await Promise.all([
+  const [sowings, companions, incompatibles] = await Promise.all([
     getSowingsForPlant(plant.id),
-    getCompanions(plant.id),
+    getPairings(plant.id, 'companions'),
+    getPairings(plant.id, 'incompatibles'),
   ])
   const cover =
     plant.coverImage && typeof plant.coverImage === 'object'
@@ -255,6 +256,24 @@ export default async function PlantPage({
             </p>
             <div className="mt-10">
               <CompanionsList companions={companions} />
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {/* Cultures à éviter */}
+      {incompatibles.length ? (
+        <section className="py-16">
+          <Container>
+            <h2 className="font-serif text-3xl text-green-deep">
+              À ne pas planter ensemble
+            </h2>
+            <p className="mt-2 max-w-prose text-sm text-ink-soft">
+              Voisinages connus pour mal tourner avec le {plant.name.toLowerCase()} —
+              concurrences, maladies partagées, allélopathie.
+            </p>
+            <div className="mt-10">
+              <CompanionsList companions={incompatibles} variant="warn" />
             </div>
           </Container>
         </section>

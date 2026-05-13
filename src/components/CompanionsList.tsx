@@ -14,8 +14,19 @@ function cover(c: Companion['coverImage']) {
   return { url: c.url, alt: c.alt ?? '' }
 }
 
-export function CompanionsList({ companions }: { companions: Companion[] }) {
+export function CompanionsList({
+  companions,
+  variant = 'good',
+}: {
+  companions: Companion[]
+  variant?: 'good' | 'warn'
+}) {
   if (!companions.length) return null
+
+  const cardBg =
+    variant === 'warn' ? 'bg-cream shadow-warm' : 'bg-cream-warm shadow-warm'
+  const dashColor =
+    variant === 'warn' ? 'text-tomato' : 'text-green-sage'
 
   return (
     <ul className="grid gap-5 md:grid-cols-2">
@@ -24,7 +35,7 @@ export function CompanionsList({ companions }: { companions: Companion[] }) {
         return (
           <li
             key={c.slug}
-            className="overflow-hidden rounded-pillow bg-cream-warm shadow-warm"
+            className={`overflow-hidden rounded-pillow ${cardBg}`}
           >
             <Link
               href={`/bibliotheque/${c.slug}`}
@@ -52,7 +63,7 @@ export function CompanionsList({ companions }: { companions: Companion[] }) {
                 ) : null}
                 {c.note ? (
                   <p className="mt-2 text-sm leading-snug text-ink-soft">
-                    <span className="italic text-tomato">— </span>
+                    <span className={`italic ${dashColor}`}>— </span>
                     {c.note}
                   </p>
                 ) : null}

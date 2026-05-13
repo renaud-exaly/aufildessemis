@@ -347,6 +347,57 @@ server.registerTool(
 )
 
 server.registerTool(
+  'set_plant_incompatibles',
+  {
+    description:
+      "Définit les cultures à ÉVITER à côté d'une plante (allélopathie, maladies partagées, concurrence). **Remplace** la liste existante. Lecture bi-directionnelle sur la page détail. Admin/mod uniquement.",
+    inputSchema: {
+      plantSlug: z
+        .string()
+        .describe('Slug de la plante qu\'on édite (ex. "tomate")'),
+      incompatibles: z
+        .array(
+          z.object({
+            incompatibleSlug: z
+              .string()
+              .describe('Slug de la plante incompatible (ex. "pomme-de-terre")'),
+            note: z
+              .string()
+              .optional()
+              .describe(
+                "Explication (ex. \"mêmes maladies (mildiou)\", \"inhibe la fixation d'azote\")",
+              ),
+          }),
+        )
+        .describe('Liste qui remplace les incompatibles existants'),
+    },
+  },
+  async ({ plantSlug, incompatibles }) => {
+    const plant = await api.getPlantBySlug(plantSlug)
+    if (!plant) return txt(`Plante "${plantSlug}" introuvable.`)
+
+    const resolved: Array<{ plant: string | number; note?: string }> = []
+    const skipped: string[] = []
+    for (const c of incompatibles) {
+      const target = await api.getPlantBySlug(c.incompatibleSlug)
+      if (!target) {
+        skipped.push(c.incompatibleSlug)
+        continue
+      }
+      resolved.push({ plant: target.id, note: c.note })
+    }
+
+    await api.setPlantIncompatibles(plant.id, resolved)
+    return ok({
+      plant: plant.name,
+      slug: plant.slug,
+      added: resolved.length,
+      skipped: skipped.length ? skipped : undefined,
+    })
+  },
+)
+
+server.registerTool(
   'set_plant_cover',
   {
     description:

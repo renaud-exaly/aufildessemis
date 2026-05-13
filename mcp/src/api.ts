@@ -193,6 +193,17 @@ export const api = {
     return data.doc
   },
 
+  async setPlantIncompatibles(
+    plantId: string | number,
+    incompatibles: Array<{ plant: string | number; note?: string }>,
+  ) {
+    const data = await request<{ doc: Plant }>(`/api/plants/${plantId}`, {
+      method: 'PATCH',
+      body: { incompatibles },
+    })
+    return data.doc
+  },
+
   async setPlantCover(plantId: string | number, mediaId: string | number) {
     const data = await request<{ doc: Plant }>(`/api/plants/${plantId}`, {
       method: 'PATCH',

@@ -139,6 +139,33 @@ export const Plants: CollectionConfig = {
       ],
     },
     {
+      name: 'incompatibles',
+      type: 'array',
+      label: 'À ne pas associer',
+      labels: { singular: 'Incompatible', plural: 'Incompatibles' },
+      admin: {
+        description:
+          "Plantes à éviter à côté de celle-ci (mêmes maladies, allélopathie, concurrence, etc.).",
+      },
+      fields: [
+        {
+          name: 'plant',
+          type: 'relationship',
+          relationTo: 'plants',
+          required: true,
+        },
+        {
+          name: 'note',
+          type: 'textarea',
+          label: 'Pourquoi éviter ?',
+          admin: {
+            description:
+              "Ex. « mêmes maladies (mildiou) », « allélopathie », « inhibe la fixation d'azote »",
+          },
+        },
+      ],
+    },
+    {
       name: 'relatedTips',
       type: 'relationship',
       relationTo: 'tips',
