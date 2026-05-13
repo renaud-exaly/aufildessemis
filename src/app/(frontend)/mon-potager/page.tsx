@@ -7,6 +7,7 @@ import { ChangePasswordForm } from './ChangePasswordForm'
 import { Container } from '@/components/Container'
 import { getSession } from '@/lib/auth'
 import { getPayloadClient } from '@/lib/payload'
+import { getLatestSowingPhotos, plantCoverFromSowing } from '@/lib/sowings'
 import { SOWING_STAGES } from '@/lib/stages'
 
 const stageLabel = (value?: string | null) =>
@@ -136,6 +137,11 @@ export default async function MonPotagerPage() {
   }
 
   const sowings = await getMySowings(session.id)
+  const photoMap = await getLatestSowingPhotos(sowings.map((s) => s.id))
+  const sowingsWithCover = sowings.map((s) => ({
+    ...s,
+    latestPhoto: photoMap.get(String(s.id)) ?? plantCoverFromSowing(s) ?? undefined,
+  }))
   const greeting = session.displayName ?? session.email.split('@')[0]
 
   return (
@@ -173,9 +179,9 @@ export default async function MonPotagerPage() {
             </Link>
           </div>
 
-          {sowings.length ? (
+          {sowingsWithCover.length ? (
             <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {sowings.map((sowing) => (
+              {sowingsWithCover.map((sowing) => (
                 <OwnerSowingCard key={sowing.id} sowing={sowing} />
               ))}
             </div>

@@ -1,6 +1,7 @@
 import { Container } from '@/components/Container'
 import { SowingCard } from '@/components/SowingCard'
 import { getPayloadClient } from '@/lib/payload'
+import { getLatestSowingPhotos, plantCoverFromSowing } from '@/lib/sowings'
 
 
 export const metadata = {
@@ -10,7 +11,15 @@ export const metadata = {
 }
 
 export default async function JournalPage() {
-  let sowings: Array<{ id: string | number; name: string }> = []
+  type SowingDoc = {
+    id: string | number
+    name: string
+    plant?:
+      | string
+      | number
+      | { name?: string | null; slug?: string | null; coverImage?: unknown }
+  }
+  let sowings: SowingDoc[] = []
   try {
     const payload = await getPayloadClient()
     const { docs } = await payload.find({
@@ -24,6 +33,12 @@ export default async function JournalPage() {
   } catch {
     sowings = []
   }
+
+  const photoMap = await getLatestSowingPhotos(sowings.map((s) => s.id))
+  const sowingsWithCover = sowings.map((s) => ({
+    ...s,
+    latestPhoto: photoMap.get(String(s.id)) ?? plantCoverFromSowing(s) ?? undefined,
+  }))
 
   return (
     <>
@@ -44,9 +59,9 @@ export default async function JournalPage() {
 
       <section className="py-16">
         <Container>
-          {sowings.length ? (
+          {sowingsWithCover.length ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {sowings.map((sowing) => (
+              {sowingsWithCover.map((sowing) => (
                 <SowingCard key={sowing.id} sowing={sowing} />
               ))}
             </div>
