@@ -7,6 +7,11 @@ import { Header } from '@/components/Header'
 
 import './styles.css'
 
+// Le Header rend l'état de session via cookies() ; force le dynamic SSR
+// sur tout le layout (frontend) sinon Next pré-rend en static et le
+// header affiche "Se connecter" même quand l'user est loggé.
+export const dynamic = 'force-dynamic'
+
 const fraunces = Fraunces({
   subsets: ['latin'],
   display: 'swap',
