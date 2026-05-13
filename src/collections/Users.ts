@@ -35,6 +35,15 @@ export const Users: CollectionConfig = {
   hooks: {
     afterRead: [
       ({ doc, req }) => {
+        // CRITIQUE : ne PAS stripper sur les appels internes (Local API).
+        // Payload utilise findByID en interne pendant payload.auth() pour
+        // résoudre le user du JWT. À ce moment req.user n'est pas encore
+        // peuplé. Si on enlève `_verified` du doc, Payload pense que le user
+        // n'est pas vérifié et l'auth échoue silencieusement.
+        // Les Server Actions tournent aussi en Local API et sont code de
+        // confiance → leur exposer les champs n'est pas un risque.
+        if ((req as { payloadAPI?: string }).payloadAPI === 'local') return doc
+
         const user = req.user as
           | { id: string | number; role?: string }
           | null
