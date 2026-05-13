@@ -47,8 +47,22 @@ export default buildConfig({
       method: 'get',
       handler: async (req) => {
         const user = req.user
+        const cookieHeader = req.headers?.get?.('cookie') ?? null
+        const cookieNames = cookieHeader
+          ? cookieHeader.split(';').map((c) => c.trim().split('=')[0])
+          : []
         if (!user) {
-          return Response.json({ user: null }, { status: 401 })
+          return Response.json(
+            {
+              user: null,
+              debug: {
+                cookieHeaderPresent: !!cookieHeader,
+                cookieNames,
+                hasPayloadToken: cookieNames.includes('payload-token'),
+              },
+            },
+            { status: 401 },
+          )
         }
         return Response.json({
           user: {
