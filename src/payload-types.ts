@@ -77,6 +77,9 @@ export interface Config {
     reports: Report;
     pages: Page;
     'newsletter-issues': NewsletterIssue;
+    'forum-categories': ForumCategory;
+    'forum-topics': ForumTopic;
+    'forum-replies': ForumReply;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,6 +97,9 @@ export interface Config {
     reports: ReportsSelect<false> | ReportsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     'newsletter-issues': NewsletterIssuesSelect<false> | NewsletterIssuesSelect<true>;
+    'forum-categories': ForumCategoriesSelect<false> | ForumCategoriesSelect<true>;
+    'forum-topics': ForumTopicsSelect<false> | ForumTopicsSelect<true>;
+    'forum-replies': ForumRepliesSelect<false> | ForumRepliesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -467,10 +473,97 @@ export interface Report {
     | {
         relationTo: 'users';
         value: number | User;
+      }
+    | {
+        relationTo: 'forum-topics';
+        value: number | ForumTopic;
+      }
+    | {
+        relationTo: 'forum-replies';
+        value: number | ForumReply;
       };
   reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
   note?: string | null;
   status: 'open' | 'resolved' | 'dismissed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Sujets du forum.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forum-topics".
+ */
+export interface ForumTopic {
+  id: number;
+  title: string;
+  slug: string;
+  category: number | ForumCategory;
+  author: number | User;
+  /**
+   * Corps du sujet en markdown.
+   */
+  body: string;
+  /**
+   * Épinglé en haut de la catégorie.
+   */
+  pinned?: boolean | null;
+  /**
+   * Bloque les nouvelles réponses.
+   */
+  locked?: boolean | null;
+  /**
+   * Compteur dénormalisé, mis à jour par hook.
+   */
+  replyCount?: number | null;
+  /**
+   * Pour le tri "fil chaud".
+   */
+  lastReplyAt?: string | null;
+  status: 'visible' | 'flagged' | 'hidden';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Catégories du forum. Fixes — éditées par les admins uniquement.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forum-categories".
+ */
+export interface ForumCategory {
+  id: number;
+  name: string;
+  /**
+   * URL : /forum/<slug>
+   */
+  slug: string;
+  /**
+   * Une ligne affichée sous le titre.
+   */
+  description?: string | null;
+  /**
+   * Un emoji court, ex. 🌿
+   */
+  icon?: string | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Réponses aux sujets du forum.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forum-replies".
+ */
+export interface ForumReply {
+  id: number;
+  topic: number | ForumTopic;
+  author: number | User;
+  /**
+   * Corps de la réponse en markdown.
+   */
+  body: string;
+  status: 'visible' | 'flagged' | 'hidden';
   updatedAt: string;
   createdAt: string;
 }
@@ -596,6 +689,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'newsletter-issues';
         value: number | NewsletterIssue;
+      } | null)
+    | ({
+        relationTo: 'forum-categories';
+        value: number | ForumCategory;
+      } | null)
+    | ({
+        relationTo: 'forum-topics';
+        value: number | ForumTopic;
+      } | null)
+    | ({
+        relationTo: 'forum-replies';
+        value: number | ForumReply;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -853,6 +958,49 @@ export interface NewsletterIssuesSelect<T extends boolean = true> {
   htmlSnapshot?: T;
   resendBroadcastId?: T;
   sentAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forum-categories_select".
+ */
+export interface ForumCategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  icon?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forum-topics_select".
+ */
+export interface ForumTopicsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  category?: T;
+  author?: T;
+  body?: T;
+  pinned?: T;
+  locked?: T;
+  replyCount?: T;
+  lastReplyAt?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forum-replies_select".
+ */
+export interface ForumRepliesSelect<T extends boolean = true> {
+  topic?: T;
+  author?: T;
+  body?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

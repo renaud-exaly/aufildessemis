@@ -38,7 +38,15 @@ export const Reports: CollectionConfig = {
     {
       name: 'target',
       type: 'relationship',
-      relationTo: ['sowings', 'sowing-updates', 'comments', 'tips', 'users'],
+      relationTo: [
+        'sowings',
+        'sowing-updates',
+        'comments',
+        'tips',
+        'users',
+        'forum-topics',
+        'forum-replies',
+      ],
       required: true,
     },
     {

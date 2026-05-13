@@ -6,6 +6,7 @@ import { getSession } from '@/lib/auth'
 const navItems = [
   { href: '/bibliotheque', label: 'Bibliothèque' },
   { href: '/journal', label: 'Journal' },
+  { href: '/forum', label: 'Forum' },
   { href: '/tips', label: 'Tips' },
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/a-propos', label: 'À propos' },

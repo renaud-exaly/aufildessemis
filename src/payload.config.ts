@@ -15,6 +15,9 @@ import { Comments } from './collections/Comments'
 import { Reports } from './collections/Reports'
 import { Pages } from './collections/Pages'
 import { NewsletterIssues } from './collections/NewsletterIssues'
+import { ForumCategories } from './collections/ForumCategories'
+import { ForumTopics } from './collections/ForumTopics'
+import { ForumReplies } from './collections/ForumReplies'
 import { buildResendEmailAdapter } from './lib/email-adapter'
 
 const filename = fileURLToPath(import.meta.url)
@@ -73,6 +76,9 @@ export default buildConfig({
     Reports,
     Pages,
     NewsletterIssues,
+    ForumCategories,
+    ForumTopics,
+    ForumReplies,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

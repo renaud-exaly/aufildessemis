@@ -9,6 +9,8 @@ export type ReportTargetCollection =
   | 'comments'
   | 'tips'
   | 'users'
+  | 'forum-topics'
+  | 'forum-replies'
 
 type ReportState =
   | { ok: true; message: string }
