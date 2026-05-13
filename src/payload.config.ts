@@ -46,64 +46,37 @@ export default buildConfig({
       path: '/whoami',
       method: 'get',
       handler: async (req) => {
-        const user = req.user
-        const cookieHeader = req.headers?.get?.('cookie') ?? null
-        const tokenMatch = cookieHeader?.match(/payload-token=([^;]+)/)
-        const token = tokenMatch?.[1]
+        const reqUser = req.user
 
-        let jwtDebug: Record<string, unknown> = {}
-        if (token) {
-          try {
-            const parts = token.split('.')
-            jwtDebug.parts = parts.length
-            if (parts.length === 3) {
-              const payload = JSON.parse(
-                Buffer.from(parts[1], 'base64url').toString('utf8'),
-              )
-              jwtDebug.payload = {
-                id: payload.id,
-                email: payload.email,
-                collection: payload.collection,
-                exp: payload.exp,
-                expDate: payload.exp
-                  ? new Date(payload.exp * 1000).toISOString()
-                  : null,
-                iat: payload.iat,
-                sid: payload.sid,
-                expiredNow: payload.exp
-                  ? payload.exp * 1000 < Date.now()
-                  : null,
-              }
-            }
-          } catch (e) {
-            jwtDebug.decodeError = (e as Error).message
+        // Tentative explicite : payload.auth() avec les headers de la requête.
+        let manualAuthResult: Record<string, unknown> = {}
+        try {
+          const result = await req.payload.auth({ headers: req.headers })
+          manualAuthResult = {
+            ok: true,
+            hasUser: !!result.user,
+            userEmail: result.user?.email,
+            userCollection: result.user?.collection,
+            responseHeaders: Object.fromEntries(
+              (result.responseHeaders ?? new Headers()).entries(),
+            ),
           }
+        } catch (e) {
+          manualAuthResult = { ok: false, error: (e as Error).message }
         }
 
-        if (!user) {
-          return Response.json(
-            {
-              user: null,
-              debug: {
-                cookieHeaderPresent: !!cookieHeader,
-                hasPayloadToken: !!token,
-                jwt: jwtDebug,
-                serverNow: new Date().toISOString(),
-                serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
-              },
-            },
-            { status: 401 },
-          )
-        }
-        return Response.json({
-          user: {
-            id: user.id,
-            email: user.email,
-            displayName: (user as { displayName?: string }).displayName,
-            role: (user as { role?: string }).role,
-            collection: user.collection,
+        const cookieHeader = req.headers?.get?.('cookie') ?? null
+        return Response.json(
+          {
+            reqUser: reqUser
+              ? { id: reqUser.id, email: reqUser.email }
+              : null,
+            manualAuth: manualAuthResult,
+            cookieHeaderLen: cookieHeader?.length ?? 0,
+            serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
           },
-        })
+          { status: reqUser ? 200 : 401 },
+        )
       },
     },
   ],
