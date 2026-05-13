@@ -8,7 +8,6 @@ import { RichText } from '@/components/RichText'
 import { SOWING_STAGES } from '@/lib/stages'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 30
 
 type Params = { user: string; sowing: string }
 

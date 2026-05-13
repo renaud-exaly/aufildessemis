@@ -7,7 +7,6 @@ import { ReportLink } from '@/components/ReportLink'
 import { RichText } from '@/components/RichText'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 60
 
 type Params = { slug: string }
 

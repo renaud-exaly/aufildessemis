@@ -6,7 +6,6 @@ import { MONTHS } from '@/lib/stages'
 import { currentMonth, isInWindow } from '@/lib/months'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 300
 
 export const metadata = {
   title: 'Calendrier de semis',

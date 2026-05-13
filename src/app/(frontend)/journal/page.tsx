@@ -2,7 +2,6 @@ import { Container } from '@/components/Container'
 import { SowingCard } from '@/components/SowingCard'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 30
 
 export const metadata = {
   title: 'Journal',

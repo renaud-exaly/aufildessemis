@@ -6,7 +6,6 @@ import { SowingCard } from '@/components/SowingCard'
 import { getPayloadClient } from '@/lib/payload'
 import { currentMonth, isInWindow, monthLabel } from '@/lib/months'
 
-export const revalidate = 60
 
 type PlantLite = {
   id: string | number

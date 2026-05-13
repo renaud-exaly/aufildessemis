@@ -2,7 +2,6 @@ import { Container } from '@/components/Container'
 import { PlantCard } from '@/components/PlantCard'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 60
 
 export const metadata = {
   title: 'Bibliothèque',

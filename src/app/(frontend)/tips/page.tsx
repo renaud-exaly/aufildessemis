@@ -2,7 +2,6 @@ import { Container } from '@/components/Container'
 import { TipCard } from '@/components/TipCard'
 import { getPayloadClient } from '@/lib/payload'
 
-export const revalidate = 60
 
 export const metadata = {
   title: 'Tips & conseils',
