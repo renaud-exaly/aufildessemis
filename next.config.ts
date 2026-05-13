@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
       { pathname: '/api/media/file/**' },
       { pathname: '/**' },
     ],
+    // Payload renvoie les URLs media en absolu dès que `serverURL` est set.
+    // On autorise donc notre propre domaine + localhost (dev).
+    remotePatterns: [
+      { protocol: 'https', hostname: 'aufildessemis.be' },
+      { protocol: 'http', hostname: 'localhost' },
+    ],
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
