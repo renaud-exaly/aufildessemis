@@ -10,16 +10,28 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.resolve(dirname),
   images: {
-    localPatterns: [
-      { pathname: '/api/media/file/**' },
-      { pathname: '/**' },
-    ],
+    localPatterns: [{ pathname: '/api/media/file/**' }],
     // Payload renvoie les URLs media en absolu dès que `serverURL` est set.
     // On autorise donc notre propre domaine + localhost (dev).
     remotePatterns: [
       { protocol: 'https', hostname: 'aufildessemis.be' },
       { protocol: 'http', hostname: 'localhost' },
     ],
+  },
+  async headers() {
+    return [
+      {
+        // Les filenames media Payload sont uniques (suffix horodaté). Ils ne
+        // changent jamais une fois uploadés → cache long + immutable.
+        source: '/api/media/file/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, s-maxage=31536000, immutable',
+          },
+        ],
+      },
+    ]
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {

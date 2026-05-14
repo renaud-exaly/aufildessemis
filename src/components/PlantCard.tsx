@@ -3,21 +3,32 @@ import Link from 'next/link'
 
 import { SowingWindowBadge } from './SowingWindowBadge'
 
+type MediaSize = { url?: string | null; width?: number | null; height?: number | null }
 type Plant = {
   slug: string
   name: string
   latinName?: string | null
-  coverImage?: { url?: string | null; alt?: string | null } | string | null
+  coverImage?:
+    | {
+        url?: string | null
+        alt?: string | null
+        sizes?: { thumbnail?: MediaSize | null; card?: MediaSize | null } | null
+      }
+    | string
+    | null
   sowingWindow?: { startMonth?: string | null; endMonth?: string | null } | null
 }
 
 function imageUrl(cover: Plant['coverImage']): { url: string; alt: string } | null {
   if (!cover || typeof cover === 'string') return null
-  if (!cover.url) return null
-  return { url: cover.url, alt: cover.alt ?? '' }
+  // Préfère la variante `card` (800px) générée par Payload, fallback original.
+  const cardUrl = cover.sizes?.card?.url
+  const url = cardUrl ?? cover.url
+  if (!url) return null
+  return { url, alt: cover.alt ?? '' }
 }
 
-export function PlantCard({ plant }: { plant: Plant }) {
+export function PlantCard({ plant, priority = false }: { plant: Plant; priority?: boolean }) {
   const cover = imageUrl(plant.coverImage)
   return (
     <Link
@@ -30,7 +41,9 @@ export function PlantCard({ plant }: { plant: Plant }) {
             src={cover.url}
             alt={cover.alt}
             fill
-            sizes="(min-width: 768px) 33vw, 100vw"
+            sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+            quality={75}
+            priority={priority}
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
           />
         ) : (

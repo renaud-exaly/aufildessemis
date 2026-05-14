@@ -45,8 +45,8 @@ export default async function BibliothequePage() {
         <Container>
           {plants.length ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {plants.map((plant) => (
-                <PlantCard key={plant.id} plant={plant} />
+              {plants.map((plant, idx) => (
+                <PlantCard key={plant.id} plant={plant} priority={idx < 3} />
               ))}
             </div>
           ) : (
