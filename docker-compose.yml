@@ -81,6 +81,9 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      # Monte le volume media pour les scripts qui touchent aux fichiers
+      # (ex. regen-media-sizes.ts) en plus des migrations classiques.
+      - media:/app/media
     environment:
       DATABASE_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET}
