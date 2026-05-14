@@ -75,6 +75,8 @@ export interface Config {
     'sowing-updates': SowingUpdate;
     tips: Tip;
     comments: Comment;
+    reactions: Reaction;
+    'sowing-follows': SowingFollow;
     reports: Report;
     pages: Page;
     'newsletter-issues': NewsletterIssue;
@@ -96,6 +98,8 @@ export interface Config {
     'sowing-updates': SowingUpdatesSelect<false> | SowingUpdatesSelect<true>;
     tips: TipsSelect<false> | TipsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
+    reactions: ReactionsSelect<false> | ReactionsSelect<true>;
+    'sowing-follows': SowingFollowsSelect<false> | SowingFollowsSelect<true>;
     reports: ReportsSelect<false> | ReportsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     'newsletter-issues': NewsletterIssuesSelect<false> | NewsletterIssuesSelect<true>;
@@ -211,6 +215,40 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    content?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * Fiches maîtresses des espèces cultivables. Éditées par admins/modérateurs.
@@ -472,6 +510,33 @@ export interface Comment {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reactions".
+ */
+export interface Reaction {
+  id: number;
+  user: number | User;
+  sowingUpdate: number | SowingUpdate;
+  kind: 'heart';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sowing-follows".
+ */
+export interface SowingFollow {
+  id: number;
+  user: number | User;
+  sowing: number | Sowing;
+  /**
+   * Dernière update pour laquelle on a déjà envoyé un email. Sert d'anti-doublon.
+   */
+  lastNotifiedUpdate?: (number | null) | SowingUpdate;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * File d'attente de modération. Triable par statut.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -710,6 +775,14 @@ export interface PayloadLockedDocument {
         value: number | Comment;
       } | null)
     | ({
+        relationTo: 'reactions';
+        value: number | Reaction;
+      } | null)
+    | ({
+        relationTo: 'sowing-follows';
+        value: number | SowingFollow;
+      } | null)
+    | ({
         relationTo: 'reports';
         value: number | Report;
       } | null)
@@ -829,6 +902,50 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        content?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        hero?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -957,6 +1074,28 @@ export interface CommentsSelect<T extends boolean = true> {
   target?: T;
   body?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reactions_select".
+ */
+export interface ReactionsSelect<T extends boolean = true> {
+  user?: T;
+  sowingUpdate?: T;
+  kind?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sowing-follows_select".
+ */
+export interface SowingFollowsSelect<T extends boolean = true> {
+  user?: T;
+  sowing?: T;
+  lastNotifiedUpdate?: T;
   updatedAt?: T;
   createdAt?: T;
 }

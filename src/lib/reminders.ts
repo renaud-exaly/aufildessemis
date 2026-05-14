@@ -485,3 +485,171 @@ export async function runWishReminders(payload: Payload): Promise<WishReminderRe
 
   return result
 }
+
+// ============================================================
+// Notifications de suivi : "Nouvelle entrée sur un lot que tu suis"
+// ============================================================
+
+export type FollowNotificationResult = {
+  scanned: number
+  sent: number
+  skipped: number
+  errors: Array<{ followId: string | number; error: string }>
+}
+
+function buildFollowNotificationEmail({
+  toName,
+  authorName,
+  sowingName,
+  updateDate,
+  link,
+}: {
+  toName?: string
+  authorName: string
+  sowingName: string
+  updateDate?: string
+  link: string
+}): { subject: string; html: string } {
+  const subject = `${authorName} a posté sur ${sowingName}`
+  const dateLabel = updateDate
+    ? new Date(updateDate).toLocaleDateString('fr-BE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : ''
+  const greeting = toName ? `Bonjour ${toName},` : 'Bonjour,'
+  const html = `
+    <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; padding: 32px; color: #1f2a24;">
+      <h1 style="font-family: Georgia, serif; font-weight: 500; color: #2d4a3e; font-size: 28px; margin: 0 0 8px;">
+        Au fil des semis
+      </h1>
+      <p style="font-style: italic; color: #4a574f; margin: 0 0 24px;">Du nouveau sur un lot que tu suis</p>
+      <p>${greeting}</p>
+      <p><strong>${authorName}</strong> vient de partager une nouvelle entrée sur <strong>${sowingName}</strong>${dateLabel ? ` (${dateLabel})` : ''}.</p>
+      <p style="margin: 28px 0;">
+        <a href="${link}" style="background:#2d4a3e;color:#ffffff;padding:14px 26px;border-radius:9999px;text-decoration:none;font-weight:600;">
+          Voir l'entrée →
+        </a>
+      </p>
+      <p style="font-size: 13px; color: #4a574f;">Tu peux te désabonner depuis la page du lot.</p>
+    </div>
+  `
+  return { subject, html }
+}
+
+/**
+ * Pour chaque user qui suit un lot, envoie au plus UN email par run de cron
+ * (la dernière update qu'il n'a pas encore vue passer). On stocke
+ * `lastNotifiedUpdate` dans la doc sowing-follows pour éviter les doublons.
+ */
+export async function runFollowNotifications(
+  payload: Payload,
+): Promise<FollowNotificationResult> {
+  const result: FollowNotificationResult = {
+    scanned: 0,
+    sent: 0,
+    skipped: 0,
+    errors: [],
+  }
+
+  const { docs: follows } = await payload.find({
+    collection: 'sowing-follows',
+    limit: 5000,
+    depth: 2,
+    overrideAccess: true,
+  })
+
+  for (const follow of follows as unknown as Array<{
+    id: number | string
+    user?:
+      | { id: number | string; email?: string; displayName?: string; reminderOptIn?: boolean }
+      | number
+      | string
+    sowing?:
+      | { id: number | string; name?: string; owner?: { id: number | string; displayName?: string } | number | string; visibility?: string }
+      | number
+      | string
+    lastNotifiedUpdate?: number | string | { id: number | string } | null
+  }>) {
+    result.scanned++
+    try {
+      const user = follow.user
+      if (!user || typeof user !== 'object' || !user.email) {
+        result.skipped++
+        continue
+      }
+      if (user.reminderOptIn === false) {
+        result.skipped++
+        continue
+      }
+      const sowing = follow.sowing
+      if (!sowing || typeof sowing !== 'object') {
+        result.skipped++
+        continue
+      }
+      if (sowing.visibility !== 'public') {
+        result.skipped++
+        continue
+      }
+
+      // Dernière update du sowing.
+      const { docs: latest } = await payload.find({
+        collection: 'sowing-updates',
+        where: { sowing: { equals: sowing.id } },
+        sort: '-date',
+        limit: 1,
+        depth: 1,
+        overrideAccess: true,
+      })
+      const lastUpdate = latest[0]
+      if (!lastUpdate) {
+        result.skipped++
+        continue
+      }
+      const lastNotifiedId =
+        follow.lastNotifiedUpdate && typeof follow.lastNotifiedUpdate === 'object'
+          ? follow.lastNotifiedUpdate.id
+          : follow.lastNotifiedUpdate
+      if (lastNotifiedId && String(lastNotifiedId) === String(lastUpdate.id)) {
+        result.skipped++
+        continue
+      }
+
+      const ownerRaw = sowing.owner
+      const ownerId =
+        ownerRaw && typeof ownerRaw === 'object' ? ownerRaw.id : ownerRaw
+      const authorName =
+        ownerRaw && typeof ownerRaw === 'object'
+          ? ownerRaw.displayName ?? 'Quelqu’un'
+          : 'Quelqu’un'
+      const baseUrl =
+        process.env.PAYLOAD_PUBLIC_SERVER_URL ?? 'http://localhost:3000'
+      const link = `${baseUrl}/journal/${ownerId ?? 'inconnu'}/${sowing.id}`
+
+      const { subject, html } = buildFollowNotificationEmail({
+        toName: user.displayName,
+        authorName,
+        sowingName: sowing.name ?? 'ce lot',
+        updateDate: lastUpdate.date as string | undefined,
+        link,
+      })
+      await payload.sendEmail({ to: user.email, subject, html })
+
+      await payload.update({
+        collection: 'sowing-follows',
+        id: follow.id,
+        data: { lastNotifiedUpdate: lastUpdate.id },
+        overrideAccess: true,
+      })
+      result.sent++
+    } catch (error) {
+      result.errors.push({
+        followId: follow.id,
+        error: error instanceof Error ? error.message : 'unknown',
+      })
+    }
+  }
+
+  return result
+}

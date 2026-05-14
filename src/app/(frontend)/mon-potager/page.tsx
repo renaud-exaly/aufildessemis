@@ -164,14 +164,24 @@ export default async function MonPotagerPage() {
               Ton carnet personnel.
             </p>
           </div>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="text-sm italic text-ink-soft underline-offset-4 hover:text-tomato hover:underline"
-            >
-              Se déconnecter
-            </button>
-          </form>
+          <div className="flex items-center gap-5 text-sm italic">
+            {session.role === 'admin' || session.role === 'moderator' ? (
+              <Link
+                href="/mon-potager/admin/signalements"
+                className="text-tomato underline-offset-4 hover:underline"
+              >
+                Modération
+              </Link>
+            ) : null}
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="text-ink-soft underline-offset-4 hover:text-tomato hover:underline"
+              >
+                Se déconnecter
+              </button>
+            </form>
+          </div>
         </div>
 
         <AgendaPanel agenda={agenda} frost={frost} />

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 
 import { getPayloadClient } from '@/lib/payload'
-import { runReminders, runWishReminders } from '@/lib/reminders'
+import {
+  runFollowNotifications,
+  runReminders,
+  runWishReminders,
+} from '@/lib/reminders'
 
 // 5 minutes — laisse de la marge si la file devient grosse plus tard.
 export const maxDuration = 300
@@ -23,14 +27,16 @@ async function handler(request: Request) {
 
   try {
     const payload = await getPayloadClient()
-    const [stageResult, wishResult] = await Promise.all([
+    const [stageResult, wishResult, followResult] = await Promise.all([
       runReminders(payload),
       runWishReminders(payload),
+      runFollowNotifications(payload),
     ])
     return NextResponse.json({
       ok: true,
       stages: stageResult,
       wishes: wishResult,
+      follows: followResult,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'unknown error'

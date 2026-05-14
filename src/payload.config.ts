@@ -13,7 +13,9 @@ import { Sowings } from './collections/Sowings'
 import { SowingUpdates } from './collections/SowingUpdates'
 import { Tips } from './collections/Tips'
 import { Comments } from './collections/Comments'
+import { Reactions } from './collections/Reactions'
 import { Reports } from './collections/Reports'
+import { SowingFollows } from './collections/SowingFollows'
 import { Pages } from './collections/Pages'
 import { NewsletterIssues } from './collections/NewsletterIssues'
 import { ForumCategories } from './collections/ForumCategories'
@@ -75,6 +77,8 @@ export default buildConfig({
     SowingUpdates,
     Tips,
     Comments,
+    Reactions,
+    SowingFollows,
     Reports,
     Pages,
     NewsletterIssues,
