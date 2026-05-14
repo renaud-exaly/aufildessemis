@@ -9,6 +9,11 @@ const dirname = path.dirname(__filename)
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.resolve(dirname),
+  experimental: {
+    // Default 1 MB est trop petit pour des photos de téléphone (3-10 MB).
+    // On laisse de la marge — sharp gère le redimensionnement côté serveur.
+    serverActions: { bodySizeLimit: '15mb' },
+  },
   images: {
     localPatterns: [{ pathname: '/api/media/file/**' }],
     // Payload renvoie les URLs media en absolu dès que `serverURL` est set.
