@@ -154,14 +154,15 @@ export default async function SowingDetailPage({
                         return (
                           <div
                             key={idx}
-                            className="aspect-[4/3] relative overflow-hidden rounded-soft bg-sand-soft"
+                            className="overflow-hidden rounded-soft bg-sand-soft"
                           >
                             <Image
                               src={img.url}
                               alt={img.alt ?? ''}
-                              fill
+                              width={img.width ?? 800}
+                              height={img.height ?? 600}
                               sizes="(min-width: 640px) 50vw, 100vw"
-                              className="object-cover"
+                              className="h-auto w-full"
                             />
                           </div>
                         )

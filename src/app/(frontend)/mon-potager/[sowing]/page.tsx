@@ -187,6 +187,8 @@ export default async function OwnerSowingPage({
                             ? {
                                 url: p.image.url ?? null,
                                 alt: p.image.alt ?? null,
+                                width: p.image.width ?? null,
+                                height: p.image.height ?? null,
                               }
                             : null,
                       }),

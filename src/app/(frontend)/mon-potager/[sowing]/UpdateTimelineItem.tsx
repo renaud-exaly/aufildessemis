@@ -12,7 +12,14 @@ import { DatePicker } from '@/components/DatePicker'
 import { RichText } from '@/components/RichText'
 
 type StageOption = { value: string; label: string }
-type Photo = { image: { url?: string | null; alt?: string | null } | null }
+type Photo = {
+  image: {
+    url?: string | null
+    alt?: string | null
+    width?: number | null
+    height?: number | null
+  } | null
+}
 
 export type UpdateView = {
   id: string
@@ -119,14 +126,15 @@ export function UpdateTimelineItem({
                   p.image?.url ? (
                     <div
                       key={idx}
-                      className="aspect-square relative overflow-hidden rounded-soft bg-sand-soft"
+                      className="overflow-hidden rounded-soft bg-sand-soft"
                     >
                       <Image
                         src={p.image.url}
                         alt={p.image.alt ?? ''}
-                        fill
+                        width={p.image.width ?? 400}
+                        height={p.image.height ?? 400}
                         sizes="33vw"
-                        className="object-cover"
+                        className="h-auto w-full"
                       />
                     </div>
                   ) : null,
@@ -220,14 +228,15 @@ export function UpdateTimelineItem({
             p.image?.url ? (
               <div
                 key={idx}
-                className="aspect-[4/3] relative overflow-hidden rounded-soft bg-sand-soft"
+                className="overflow-hidden rounded-soft bg-sand-soft"
               >
                 <Image
                   src={p.image.url}
                   alt={p.image.alt ?? ''}
-                  fill
+                  width={p.image.width ?? 800}
+                  height={p.image.height ?? 600}
                   sizes="(min-width: 640px) 50vw, 100vw"
-                  className="object-cover"
+                  className="h-auto w-full"
                 />
               </div>
             ) : null,
