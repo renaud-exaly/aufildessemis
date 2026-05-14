@@ -15,7 +15,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 
 import { api, type Sowing } from './api.js'
-import { lexicalToPlainText, plainTextToLexical } from './lexical.js'
+import { lexicalToPlainText, markdownToLexical } from './lexical.js'
 
 const STAGE_VALUES = [
   'semis',
@@ -200,10 +200,10 @@ server.registerTool(
   'add_sowing_update',
   {
     description:
-      "Ajoute une mise à jour datée à un lot de semis. La note est en texte brut (paragraphes séparés par lignes vides). L'étape est optionnelle mais recommandée — elle déverrouille les rappels. Photos : chemins absolus locaux, uploadés automatiquement.",
+      "Ajoute une mise à jour datée à un lot de semis. La note accepte du **markdown** (titres, listes, gras, italique, liens, citations). L'étape est optionnelle mais recommandée — elle déverrouille les rappels. Photos : chemins absolus locaux, uploadés automatiquement.",
     inputSchema: {
       sowingId: z.union([z.string(), z.number()]).describe('ID du Sowing'),
-      note: z.string().describe('Note libre (texte brut)'),
+      note: z.string().describe('Note libre (markdown supporté)'),
       stage: z
         .enum(STAGE_VALUES)
         .optional()
@@ -236,7 +236,7 @@ server.registerTool(
       sowingId,
       date,
       stage,
-      note: plainTextToLexical(note),
+      note: markdownToLexical(note),
       photoIds,
     })
     return ok({
@@ -449,7 +449,7 @@ server.registerTool(
       description: z
         .string()
         .optional()
-        .describe('Description en texte brut (paragraphes séparés par lignes vides)'),
+        .describe('Description (markdown supporté : titres, listes, gras, liens…)'),
       sowingWindow: z
         .object({
           startMonth: z.enum(MONTH_VALUES).describe('Mois de début (01-12)'),
@@ -498,7 +498,7 @@ server.registerTool(
       name,
       slug: finalSlug,
       latinName,
-      description: description ? plainTextToLexical(description) : undefined,
+      description: description ? markdownToLexical(description) : undefined,
       coverImageId,
       sowingWindow,
       typicalStages,
@@ -518,36 +518,173 @@ server.registerTool(
   'create_tip',
   {
     description:
-      "Publie un Tip (conseil) dans le carnet des astuces. Réservé aux admins/modérateurs — l'API renverra une erreur 403 si tu n'as pas les droits.",
+      "Publie un Tip (conseil) dans le carnet des astuces. Body en **markdown** (titres, listes, gras, italique, liens, citations, code). Slug auto-généré depuis le titre si absent. Cover image optionnelle via chemin local (uploadée auto). Réservé aux admins/modérateurs — 403 sinon.",
     inputSchema: {
-      title: z.string(),
-      slug: z
-        .string()
-        .describe('Slug URL-safe (lowercase, tirets — ex. "premiere-recolte")'),
+      title: z.string().describe('Titre du tip (ex. "Pourquoi pincer les courgettes")'),
       body: z
         .string()
-        .describe('Corps en texte brut (paragraphes séparés par lignes vides)'),
+        .describe(
+          'Corps en markdown : # titres, **gras**, *italique*, [liens](url), listes -/1., > citations, `code`.',
+        ),
+      slug: z
+        .string()
+        .optional()
+        .describe('Slug URL-safe ; auto-généré depuis le titre si absent'),
       plantSlugs: z
         .array(z.string())
         .optional()
         .describe('Slugs de plantes associées (optionnel)'),
-      status: z.enum(['draft', 'published']).optional(),
+      coverImagePath: z
+        .string()
+        .optional()
+        .describe("Chemin absolu local d'une image de couverture (sera uploadée)"),
+      coverImageAlt: z
+        .string()
+        .optional()
+        .describe("Alt text de la cover image (défaut : titre du tip)"),
+      status: z
+        .enum(['draft', 'published'])
+        .optional()
+        .describe('"published" (défaut) ou "draft"'),
     },
   },
-  async ({ title, slug, body, plantSlugs, status }) => {
+  async ({
+    title,
+    body,
+    slug,
+    plantSlugs,
+    coverImagePath,
+    coverImageAlt,
+    status,
+  }) => {
+    const finalSlug = slug?.trim() || slugify(title)
+
+    const existing = await api.getTipBySlug(finalSlug)
+    if (existing) {
+      return txt(
+        `Un tip existe déjà avec le slug "${finalSlug}" (${existing.title}). Choisis un autre slug ou utilise update_tip.`,
+      )
+    }
+
     let plantIds: Array<string | number> | undefined
+    let skippedPlants: string[] | undefined
     if (plantSlugs?.length) {
       const plants = await Promise.all(plantSlugs.map((s) => api.getPlantBySlug(s)))
-      plantIds = plants.filter(Boolean).map((p) => p!.id)
+      plantIds = []
+      skippedPlants = []
+      plantSlugs.forEach((s, i) => {
+        const p = plants[i]
+        if (p) plantIds!.push(p.id)
+        else skippedPlants!.push(s)
+      })
+      if (!skippedPlants.length) skippedPlants = undefined
     }
+
+    let coverImageId: string | number | undefined
+    if (coverImagePath) {
+      coverImageId = await api.uploadMedia(
+        coverImagePath,
+        coverImageAlt ?? `Illustration du tip "${title}"`,
+      )
+    }
+
     const tip = await api.createTip({
       title,
-      slug,
-      body: plainTextToLexical(body),
+      slug: finalSlug,
+      body: markdownToLexical(body),
       plantIds,
+      coverImageId,
       status,
     })
-    return ok({ id: tip.id, slug: tip.slug })
+    return ok({
+      id: tip.id,
+      slug: tip.slug,
+      url: `/tips/${tip.slug}`,
+      coverImageId,
+      skippedPlants,
+    })
+  },
+)
+
+server.registerTool(
+  'update_tip',
+  {
+    description:
+      "Modifie un tip existant (identifié par son slug). Tous les champs sont optionnels — fournis seulement ce que tu veux changer. Le body en markdown remplace l'ancien. Cover image : passe coverImagePath pour uploader une nouvelle image, ou null pour la retirer. Admin/mod uniquement.",
+    inputSchema: {
+      slug: z.string().describe('Slug du tip à modifier'),
+      title: z.string().optional(),
+      newSlug: z
+        .string()
+        .optional()
+        .describe('Nouveau slug (renomme l\'URL ; rare — attention aux liens existants)'),
+      body: z.string().optional().describe('Nouveau corps en markdown'),
+      plantSlugs: z
+        .array(z.string())
+        .optional()
+        .describe('Remplace la liste des plantes associées'),
+      coverImagePath: z
+        .string()
+        .nullable()
+        .optional()
+        .describe(
+          "Chemin local d'une nouvelle cover (uploadée) ; passe null pour retirer la cover",
+        ),
+      coverImageAlt: z.string().optional(),
+      status: z.enum(['draft', 'published', 'flagged']).optional(),
+    },
+  },
+  async ({
+    slug,
+    title,
+    newSlug,
+    body,
+    plantSlugs,
+    coverImagePath,
+    coverImageAlt,
+    status,
+  }) => {
+    const tip = await api.getTipBySlug(slug)
+    if (!tip) return txt(`Aucun tip avec le slug "${slug}".`)
+
+    const patch: Record<string, unknown> = {}
+    if (title !== undefined) patch.title = title
+    if (newSlug !== undefined) patch.slug = newSlug
+    if (body !== undefined) patch.body = markdownToLexical(body)
+    if (status !== undefined) patch.status = status
+
+    let skippedPlants: string[] | undefined
+    if (plantSlugs !== undefined) {
+      const plants = await Promise.all(plantSlugs.map((s) => api.getPlantBySlug(s)))
+      const ids: Array<string | number> = []
+      skippedPlants = []
+      plantSlugs.forEach((s, i) => {
+        const p = plants[i]
+        if (p) ids.push(p.id)
+        else skippedPlants!.push(s)
+      })
+      patch.plants = ids
+      if (!skippedPlants.length) skippedPlants = undefined
+    }
+
+    if (coverImagePath === null) {
+      patch.coverImage = null
+    } else if (coverImagePath) {
+      patch.coverImage = await api.uploadMedia(
+        coverImagePath,
+        coverImageAlt ?? `Illustration du tip "${title ?? tip.title}"`,
+      )
+    }
+
+    if (!Object.keys(patch).length) return txt('Rien à modifier.')
+
+    const updated = await api.updateTip(tip.id, patch)
+    return ok({
+      id: updated.id,
+      slug: updated.slug,
+      url: `/tips/${updated.slug}`,
+      skippedPlants,
+    })
   },
 )
 

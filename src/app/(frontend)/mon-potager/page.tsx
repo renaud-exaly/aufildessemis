@@ -171,12 +171,20 @@ export default async function MonPotagerPage() {
             <h2 className="font-serif text-3xl text-green-deep">
               {sowings.length ? 'Tes semis en cours' : 'Ton carnet est vide'}
             </h2>
-            <Link
-              href="/mon-potager/nouveau-semis"
-              className="inline-flex items-center gap-2 rounded-full bg-tomato px-5 py-2.5 text-sm font-semibold text-white tracking-[0.04em] transition-colors hover:bg-[#a83b25]"
-            >
-              + Nouveau lot
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/mon-potager/envies"
+                className="inline-flex items-center gap-2 rounded-full border border-green-deep/30 bg-cream-warm px-4 py-2.5 text-sm font-medium text-green-deep transition-colors hover:border-green-deep hover:bg-green-soft/30"
+              >
+                ♥ Mes envies
+              </Link>
+              <Link
+                href="/mon-potager/nouveau-semis"
+                className="inline-flex items-center gap-2 rounded-full bg-tomato px-5 py-2.5 text-sm font-semibold text-white tracking-[0.04em] transition-colors hover:bg-[#a83b25]"
+              >
+                + Nouveau lot
+              </Link>
+            </div>
           </div>
 
           {sowingsWithCover.length ? (

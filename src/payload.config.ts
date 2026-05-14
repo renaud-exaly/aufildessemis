@@ -8,6 +8,7 @@ import sharp from 'sharp'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Plants } from './collections/Plants'
+import { PlantWishes } from './collections/PlantWishes'
 import { Sowings } from './collections/Sowings'
 import { SowingUpdates } from './collections/SowingUpdates'
 import { Tips } from './collections/Tips'
@@ -69,6 +70,7 @@ export default buildConfig({
     Users,
     Media,
     Plants,
+    PlantWishes,
     Sowings,
     SowingUpdates,
     Tips,

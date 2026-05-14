@@ -13,6 +13,7 @@ const SELF_OR_STAFF_FIELDS = [
   'sessions',
   'newsletterOptIn',
   'reminderOptIn',
+  'lastWishReminderAt',
   '_verified',
   '_verificationToken',
 ] as const
@@ -188,6 +189,16 @@ export const Users: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
       label: 'Reçoit les rappels par email',
+    },
+    {
+      name: 'lastWishReminderAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          "Dernier envoi d'un rappel d'envie. Sert au throttle (max 1 mail / 48h / user).",
+      },
     },
     {
       name: 'bannedAt',

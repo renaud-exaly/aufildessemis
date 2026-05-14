@@ -245,6 +245,7 @@ export const api = {
     slug: string
     body: unknown
     plantIds?: Array<string | number>
+    coverImageId?: string | number
     status?: 'draft' | 'published'
   }) {
     const data = await request<{ doc: { id: string | number; slug: string } }>(
@@ -256,9 +257,34 @@ export const api = {
           slug: args.slug,
           body: args.body,
           plants: args.plantIds,
+          coverImage: args.coverImageId,
           status: args.status ?? 'published',
         },
       },
+    )
+    return data.doc
+  },
+
+  async getTipBySlug(slug: string) {
+    const data = await request<{
+      docs: Array<{ id: string | number; slug: string; title: string }>
+    }>('/api/tips', {
+      query: {
+        'where[slug][equals]': slug,
+        limit: 1,
+        depth: 0,
+      },
+    })
+    return data.docs[0] ?? null
+  },
+
+  async updateTip(
+    id: string | number,
+    patch: Record<string, unknown>,
+  ) {
+    const data = await request<{ doc: { id: string | number; slug: string } }>(
+      `/api/tips/${id}`,
+      { method: 'PATCH', body: patch },
     )
     return data.doc
   },

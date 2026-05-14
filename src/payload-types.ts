@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     plants: Plant;
+    'plant-wishes': PlantWish;
     sowings: Sowing;
     'sowing-updates': SowingUpdate;
     tips: Tip;
@@ -90,6 +91,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     plants: PlantsSelect<false> | PlantsSelect<true>;
+    'plant-wishes': PlantWishesSelect<false> | PlantWishesSelect<true>;
     sowings: SowingsSelect<false> | SowingsSelect<true>;
     'sowing-updates': SowingUpdatesSelect<false> | SowingUpdatesSelect<true>;
     tips: TipsSelect<false> | TipsSelect<true>;
@@ -158,6 +160,10 @@ export interface User {
   region?: string | null;
   newsletterOptIn?: boolean | null;
   reminderOptIn?: boolean | null;
+  /**
+   * Dernier envoi d'un rappel d'envie. Sert au throttle (max 1 mail / 48h / user).
+   */
+  lastWishReminderAt?: string | null;
   bannedAt?: string | null;
   /**
    * Anonymisation RGPD. PII effacée, contenu conservé.
@@ -333,6 +339,27 @@ export interface Tip {
    */
   plants?: (number | Plant)[] | null;
   status: 'published' | 'draft' | 'flagged';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Envies de semis posées depuis la bibliothèque. Une ligne = (user, plante).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plant-wishes".
+ */
+export interface PlantWish {
+  id: number;
+  user: number | User;
+  plant: number | Plant;
+  /**
+   * Année de la dernière notif envoyée. Empêche le re-spam la même saison.
+   */
+  lastNotifiedYear?: number | null;
+  /**
+   * Mis à true si le user clique "pas cette année". Empêche le rappel sans supprimer l'envie.
+   */
+  dismissed?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -663,6 +690,10 @@ export interface PayloadLockedDocument {
         value: number | Plant;
       } | null)
     | ({
+        relationTo: 'plant-wishes';
+        value: number | PlantWish;
+      } | null)
+    | ({
         relationTo: 'sowings';
         value: number | Sowing;
       } | null)
@@ -756,6 +787,7 @@ export interface UsersSelect<T extends boolean = true> {
   region?: T;
   newsletterOptIn?: T;
   reminderOptIn?: T;
+  lastWishReminderAt?: T;
   bannedAt?: T;
   deletedAt?: T;
   updatedAt?: T;
@@ -845,6 +877,18 @@ export interface PlantsSelect<T extends boolean = true> {
         id?: T;
       };
   relatedTips?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plant-wishes_select".
+ */
+export interface PlantWishesSelect<T extends boolean = true> {
+  user?: T;
+  plant?: T;
+  lastNotifiedYear?: T;
+  dismissed?: T;
   updatedAt?: T;
   createdAt?: T;
 }

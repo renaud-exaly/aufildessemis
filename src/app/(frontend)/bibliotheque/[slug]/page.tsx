@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { getMyWishedPlantIds } from '@/app/(frontend)/mon-potager/envies/actions'
 import { CompanionsList, type Companion } from '@/components/CompanionsList'
 import { Container } from '@/components/Container'
 import { RichText } from '@/components/RichText'
@@ -9,6 +10,8 @@ import { SowingCard } from '@/components/SowingCard'
 import { SowingWindowBadge } from '@/components/SowingWindowBadge'
 import { StageTimeline } from '@/components/StageTimeline'
 import { TipCard } from '@/components/TipCard'
+import { WishButton } from '@/components/WishButton'
+import { getSession } from '@/lib/auth'
 import { getPayloadClient } from '@/lib/payload'
 
 
@@ -148,11 +151,15 @@ export default async function PlantPage({
   const plant = await getPlant(slug)
   if (!plant) notFound()
 
-  const [sowings, companions, incompatibles] = await Promise.all([
-    getSowingsForPlant(plant.id),
-    getPairings(plant.id, 'companions'),
-    getPairings(plant.id, 'incompatibles'),
-  ])
+  const [sowings, companions, incompatibles, session, wishedIds] =
+    await Promise.all([
+      getSowingsForPlant(plant.id),
+      getPairings(plant.id, 'companions'),
+      getPairings(plant.id, 'incompatibles'),
+      getSession(),
+      getMyWishedPlantIds(),
+    ])
+  const isWished = wishedIds.has(plant.id)
   const cover =
     plant.coverImage && typeof plant.coverImage === 'object'
       ? plant.coverImage
@@ -215,6 +222,14 @@ export default async function PlantPage({
                   ) : null}
                 </div>
               ) : null}
+              <div className="mt-6">
+                <WishButton
+                  plantId={Number(plant.id)}
+                  plantName={plant.name}
+                  initialWished={isWished}
+                  loggedIn={Boolean(session)}
+                />
+              </div>
               {plant.description ? (
                 <div className="prose prose-stone mt-8 max-w-prose leading-relaxed text-ink">
                   <RichText data={plant.description} />

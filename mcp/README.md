@@ -24,7 +24,10 @@ Serveur MCP local qui te permet de **piloter ton site depuis Claude Code** : cr�
 | `delete_sowing_update` | Supprime une update (faute de frappe) |
 | `create_plant` | Ajoute une fiche dans la bibliothèque (admin/mod) — slug auto-généré, photo de couverture optionnelle |
 | `set_plant_cover` | Upload une image locale et la met en cover d'une fiche existante (admin/mod) |
-| `create_tip` | Publie un tip (admin/mod uniquement) |
+| `create_tip` | Publie un tip (admin/mod) — **markdown**, slug auto, cover image uploadée auto |
+| `update_tip` | Modifie un tip existant (par slug) — patch partiel, cover image remplaçable ou retirable |
+
+> **Markdown** : les champs richText (`create_tip.body`, `create_plant.description`, `add_sowing_update.note`) acceptent du markdown : titres `#`, listes `-`/`1.`, **gras**, *italique*, `code inline`, [liens](url), `> citations`, `---` (hr). Du texte brut reste valide — c'est du markdown trivial.
 
 ## Setup
 
@@ -101,12 +104,20 @@ Claude :
 2. `add_sowing_update` avec stage="levee", note, photoPaths=["/Users/.../basilic-leve.jpg"]
 3. Le MCP upload la photo et la rattache
 
-### Publier un tip
+### Publier un tip avec markdown + cover image
 
-> Publie un tip "Pourquoi pincer les courgettes" : explique en 2 paragraphes que ça oriente l'énergie sur les fruits.
+> Publie un tip "Pourquoi pincer les courgettes" avec un titre H2, une liste à puces des bénéfices, un lien vers la fiche courgette, et la photo /Users/renaud/Desktop/pincage.jpg en couverture.
 
 Claude :
-1. `create_tip` avec title, slug, body en texte brut
+1. `create_tip` avec title, body en markdown (titres, listes, liens), coverImagePath
+2. Le MCP slugifie le titre, upload la cover image, convertit le markdown en Lexical, publie
+
+### Corriger un tip déjà publié
+
+> Dans le tip "pourquoi-pincer-les-courgettes", ajoute un paragraphe à la fin sur les variétés non-coureuses.
+
+Claude :
+1. `update_tip` avec slug + nouveau body markdown
 
 ## Sécurité
 
