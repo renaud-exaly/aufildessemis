@@ -2,13 +2,16 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { deleteMyAccountAction, signOutAction } from './actions'
+import { AgendaPanel } from './AgendaPanel'
 import { DangerZone } from './DangerZone'
 import { ChangePasswordForm } from './ChangePasswordForm'
 import { Container } from '@/components/Container'
+import { getAgendaForUser } from '@/lib/agenda'
 import { getSession } from '@/lib/auth'
 import { getPayloadClient } from '@/lib/payload'
 import { getLatestSowingPhotos, plantCoverFromSowing } from '@/lib/sowings'
 import { SOWING_STAGES } from '@/lib/stages'
+import { getFrostForecast } from '@/lib/weather'
 
 const stageLabel = (value?: string | null) =>
   value ? SOWING_STAGES.find((s) => s.value === value)?.label ?? value : null
@@ -136,7 +139,12 @@ export default async function MonPotagerPage() {
     )
   }
 
-  const sowings = await getMySowings(session.id)
+  const payload = await getPayloadClient()
+  const [sowings, agenda, frost] = await Promise.all([
+    getMySowings(session.id),
+    getAgendaForUser(payload, session.id),
+    getFrostForecast(),
+  ])
   const photoMap = await getLatestSowingPhotos(sowings.map((s) => s.id))
   const sowingsWithCover = sowings.map((s) => ({
     ...s,
@@ -165,6 +173,8 @@ export default async function MonPotagerPage() {
             </button>
           </form>
         </div>
+
+        <AgendaPanel agenda={agenda} frost={frost} />
 
         <div className="mt-12">
           <div className="flex flex-wrap items-end justify-between gap-3">

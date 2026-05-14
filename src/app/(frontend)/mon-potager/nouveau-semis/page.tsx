@@ -25,18 +25,22 @@ async function getPlants() {
   }
 }
 
-export default async function NewSowingPage() {
+export default async function NewSowingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plant?: string }>
+}) {
   const session = await getSession()
   if (!session) redirect('/mon-potager/connexion')
 
-  const plants = await getPlants()
+  const [plants, sp] = await Promise.all([getPlants(), searchParams])
 
   return (
     <AuthShell
       title="Nouveau lot"
       subtitle="Un nom, une plante, une date — tu pourras compléter ensuite."
     >
-      <NewSowingForm plants={plants} />
+      <NewSowingForm plants={plants} defaultPlantId={sp.plant} />
     </AuthShell>
   )
 }

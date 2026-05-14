@@ -9,7 +9,13 @@ import { DatePicker } from '@/components/DatePicker'
 
 type PlantOption = { id: string; name: string }
 
-export function NewSowingForm({ plants }: { plants: PlantOption[] }) {
+export function NewSowingForm({
+  plants,
+  defaultPlantId,
+}: {
+  plants: PlantOption[]
+  defaultPlantId?: string
+}) {
   const [state, action, pending] = useActionState(createSowingAction, null)
   const today = new Date().toISOString().slice(0, 10)
 
@@ -29,6 +35,7 @@ export function NewSowingForm({ plants }: { plants: PlantOption[] }) {
         label="Plante"
         placeholder="Tape pour chercher (tomate, basilic…)"
         required
+        defaultValue={defaultPlantId}
         options={plants.map((p) => ({ value: p.id, label: p.name }))}
         emptyMessage="Aucune plante de ce nom dans la bibliothèque."
       />
