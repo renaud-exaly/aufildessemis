@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import type { PropsWithChildren } from 'react'
 
+import { AuthField } from './AuthField'
 import { Container } from './Container'
+
+export { AuthField }
 
 type AuthShellProps = PropsWithChildren<{
   title: string
@@ -35,41 +38,6 @@ export function AuthShell({ title, subtitle, footer, children }: AuthShellProps)
         ) : null}
       </Container>
     </section>
-  )
-}
-
-export function AuthField({
-  label,
-  name,
-  type = 'text',
-  required = true,
-  autoComplete,
-  defaultValue,
-  placeholder,
-}: {
-  label: string
-  name: string
-  type?: string
-  required?: boolean
-  autoComplete?: string
-  defaultValue?: string
-  placeholder?: string
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium uppercase tracking-[0.16em] text-ink-soft">
-        {label}
-      </span>
-      <input
-        name={name}
-        type={type}
-        required={required}
-        autoComplete={autoComplete}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-soft border border-green-soft/60 bg-cream-warm px-4 py-3 font-sans text-base text-ink placeholder:text-ink-soft/60 focus:border-green-deep focus:outline-none focus:ring-2 focus:ring-green-deep/30"
-      />
-    </label>
   )
 }
 
