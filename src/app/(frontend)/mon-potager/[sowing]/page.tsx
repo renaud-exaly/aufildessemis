@@ -1,12 +1,12 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
 import { AddUpdateForm } from './AddUpdateForm'
 import { DeleteSowingForm } from './DeleteSowingForm'
+import { UpdateTimelineItem, type UpdateView } from './UpdateTimelineItem'
 import { Container } from '@/components/Container'
-import { RichText } from '@/components/RichText'
 import { getSession } from '@/lib/auth'
+import { lexicalToPlainText } from '@/lib/lexical'
 import { getPayloadClient } from '@/lib/payload'
 import { SOWING_STAGES } from '@/lib/stages'
 
@@ -172,58 +172,39 @@ export default async function OwnerSowingPage({
           <div className="mt-8">
             {updates.length ? (
               <ol className="relative space-y-10 border-l border-green-soft/60 pl-8">
-                {updates.map((u) => (
-                  <li key={u.id} className="relative">
-                    <span
-                      aria-hidden
-                      className="absolute -left-[35px] grid h-3.5 w-3.5 place-items-center rounded-full bg-green-sage ring-4 ring-cream"
-                    />
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <time className="font-serif text-xl text-green-deep">
-                        {u.date
-                          ? new Date(u.date).toLocaleDateString('fr-BE', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
-                          : null}
-                      </time>
-                      {u.stage ? (
-                        <span className="rounded-full bg-green-soft/40 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-green-deep">
-                          {stageLabel(u.stage)}
-                        </span>
-                      ) : null}
-                    </div>
-                    {u.note ? (
-                      <div className="prose prose-stone mt-3 max-w-prose text-ink">
-                        <RichText data={u.note as never} />
-                      </div>
-                    ) : null}
-                    {u.photos?.length ? (
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        {u.photos.map((photo, idx) => {
-                          const img = photo.image
-                          if (!img || typeof img !== 'object' || !img.url)
-                            return null
-                          return (
-                            <div
-                              key={idx}
-                              className="aspect-[4/3] relative overflow-hidden rounded-soft bg-sand-soft"
-                            >
-                              <Image
-                                src={img.url}
-                                alt={img.alt ?? ''}
-                                fill
-                                sizes="(min-width: 640px) 50vw, 100vw"
-                                className="object-cover"
-                              />
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
+                {updates.map((u) => {
+                  const view: UpdateView = {
+                    id: String(u.id),
+                    date: u.date ?? null,
+                    stage: u.stage ?? null,
+                    stageLabel: stageLabel(u.stage),
+                    note: u.note ?? null,
+                    notePlain: lexicalToPlainText(u.note),
+                    photos: (Array.isArray(u.photos) ? u.photos : []).map(
+                      (p) => ({
+                        image:
+                          p.image && typeof p.image === 'object'
+                            ? {
+                                url: p.image.url ?? null,
+                                alt: p.image.alt ?? null,
+                              }
+                            : null,
+                      }),
+                    ),
+                  }
+                  return (
+                    <li key={u.id} className="relative">
+                      <span
+                        aria-hidden
+                        className="absolute -left-[35px] grid h-3.5 w-3.5 place-items-center rounded-full bg-green-sage ring-4 ring-cream"
+                      />
+                      <UpdateTimelineItem
+                        update={view}
+                        stages={availableStages}
+                      />
+                    </li>
+                  )
+                })}
               </ol>
             ) : (
               <p className="text-ink-soft">

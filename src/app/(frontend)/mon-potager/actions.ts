@@ -359,6 +359,158 @@ export async function addSowingUpdateAction(
   }
 }
 
+export async function updateSowingUpdateAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await getSession()
+  if (!session) {
+    redirect('/mon-potager/connexion')
+  }
+
+  const updateId = asString(formData.get('updateId'))
+  if (!updateId) return { error: 'Mise à jour manquante.' }
+
+  const date = asString(formData.get('date'))
+  const note = asString(formData.get('note'))
+  const rawStage = asString(formData.get('stage'))
+  const stage =
+    rawStage && STAGE_VALUES.includes(rawStage) ? (rawStage as SowingStage) : null
+
+  const dateIso = date ? new Date(date).toISOString() : null
+  if (dateIso && Number.isNaN(Date.parse(dateIso))) {
+    return { error: 'Date invalide.' }
+  }
+
+  try {
+    const payload = await getPayloadClient()
+
+    // Charge l'update + check ownership via author.
+    const existing = await payload.findByID({
+      collection: 'sowing-updates',
+      id: updateId,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const authorId =
+      typeof existing.author === 'object' ? existing.author.id : existing.author
+    if (
+      String(authorId) !== String(session.id) &&
+      session.role !== 'admin' &&
+      session.role !== 'moderator'
+    ) {
+      return { error: "Cette entrée ne t'appartient pas." }
+    }
+
+    const sowingId =
+      typeof existing.sowing === 'object' ? existing.sowing.id : existing.sowing
+
+    // Append des nouvelles photos aux photos existantes.
+    const photoFiles = formData
+      .getAll('photos')
+      .filter((f): f is File => f instanceof File && f.size > 0)
+
+    let newPhotos: UploadedPhoto[] = []
+    if (photoFiles.length) {
+      const sowing = await payload.findByID({
+        collection: 'sowings',
+        id: sowingId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      newPhotos = await uploadPhotos(
+        photoFiles,
+        `${sowing.name} — ${(dateIso ?? existing.date).slice(0, 10)}`,
+      )
+    }
+
+    const existingPhotos = Array.isArray(existing.photos) ? existing.photos : []
+    const mergedPhotos = [
+      ...existingPhotos.map((p) => ({
+        image:
+          typeof p.image === 'object' && p.image
+            ? Number((p.image as { id: number | string }).id)
+            : Number(p.image as number | string),
+        caption: p.caption ?? undefined,
+      })),
+      ...newPhotos.map((p) => ({ image: Number(p.id) })),
+    ]
+
+    await payload.update({
+      collection: 'sowing-updates',
+      id: updateId,
+      data: {
+        ...(dateIso ? { date: dateIso } : {}),
+        note: note ? plainTextToLexical(note) : null,
+        photos: mergedPhotos,
+        stage: stage ?? null,
+      },
+      overrideAccess: true,
+    })
+
+    revalidatePath(`/mon-potager/${sowingId}`)
+    revalidatePath(`/journal`)
+    revalidatePath('/mon-potager')
+
+    return { ok: true, message: 'Mise à jour modifiée.' }
+  } catch (error) {
+    if (error && typeof error === 'object' && 'digest' in error) throw error
+    const message = error instanceof Error ? error.message : 'Erreur inconnue.'
+    return { error: message }
+  }
+}
+
+export async function deleteSowingUpdateAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await getSession()
+  if (!session) {
+    redirect('/mon-potager/connexion')
+  }
+
+  const updateId = asString(formData.get('updateId'))
+  if (!updateId) return { error: 'Mise à jour manquante.' }
+
+  try {
+    const payload = await getPayloadClient()
+    const existing = await payload.findByID({
+      collection: 'sowing-updates',
+      id: updateId,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const authorId =
+      typeof existing.author === 'object' ? existing.author.id : existing.author
+    if (
+      String(authorId) !== String(session.id) &&
+      session.role !== 'admin' &&
+      session.role !== 'moderator'
+    ) {
+      return { error: "Cette entrée ne t'appartient pas." }
+    }
+
+    const sowingId =
+      typeof existing.sowing === 'object' ? existing.sowing.id : existing.sowing
+
+    await payload.delete({
+      collection: 'sowing-updates',
+      id: updateId,
+      overrideAccess: true,
+    })
+
+    revalidatePath(`/mon-potager/${sowingId}`)
+    revalidatePath('/journal')
+    revalidatePath('/mon-potager')
+
+    return { ok: true, message: 'Entrée supprimée.' }
+  } catch (error) {
+    if (error && typeof error === 'object' && 'digest' in error) throw error
+    const message = error instanceof Error ? error.message : 'Erreur inconnue.'
+    return { error: message }
+  }
+}
+
 export async function deleteSowingAction(
   _prev: FormState,
   formData: FormData,
