@@ -69,8 +69,12 @@ export async function toggleReactionAction(
 
 // --------- Commentaires ----------------------------------------------------
 
+export type CommentTarget =
+  | { collection: 'sowing-updates'; id: number }
+  | { collection: 'tips'; id: number }
+
 export async function addCommentAction(
-  sowingUpdateId: number,
+  target: CommentTarget,
   body: string,
 ): Promise<Result<{ commentId: number | string }>> {
   const session = await getSession()
@@ -83,7 +87,10 @@ export async function addCommentAction(
   if (trimmed.length > COMMENT_MAX_LENGTH) {
     return { ok: false, error: `Le commentaire dépasse ${COMMENT_MAX_LENGTH} caractères.` }
   }
-  if (!Number.isFinite(sowingUpdateId)) {
+  if (!target || !Number.isFinite(target.id)) {
+    return { ok: false, error: 'Cible invalide.' }
+  }
+  if (target.collection !== 'sowing-updates' && target.collection !== 'tips') {
     return { ok: false, error: 'Cible invalide.' }
   }
 
@@ -110,82 +117,110 @@ export async function addCommentAction(
       }
     }
 
-    // Récupère le sowing-update + son auteur pour la notif.
-    const update = await payload.findByID({
-      collection: 'sowing-updates',
-      id: sowingUpdateId,
-      depth: 1,
-      overrideAccess: true,
-    })
-
     const created = await payload.create({
       collection: 'comments',
       data: {
         author: userId,
         body: trimmed,
         status: 'visible',
-        target: { relationTo: 'sowing-updates', value: sowingUpdateId },
+        target: { relationTo: target.collection, value: target.id },
       },
       overrideAccess: true,
     })
 
-    // Notif email à l'auteur de l'update (si différent + opted-in).
-    const updateAuthor = update.author as
-      | { id?: number | string; email?: string; displayName?: string; reminderOptIn?: boolean }
-      | string
-      | undefined
-    if (
-      updateAuthor &&
-      typeof updateAuthor === 'object' &&
-      updateAuthor.email &&
-      String(updateAuthor.id) !== String(userId) &&
-      updateAuthor.reminderOptIn !== false
-    ) {
-      const sowing = update.sowing as
-        | { id?: number | string; name?: string; owner?: number | string | { id?: number | string } }
-        | string
-        | number
-      const sowingId =
-        typeof sowing === 'object' ? sowing.id : (sowing as number | string)
-      const ownerRaw = typeof sowing === 'object' ? sowing.owner : undefined
-      const ownerId =
-        typeof ownerRaw === 'object' && ownerRaw
-          ? ownerRaw.id
-          : (ownerRaw as number | string | undefined)
-      const sowingName =
-        typeof sowing === 'object' && sowing.name ? sowing.name : 'ton lot'
-      const baseUrl =
-        process.env.PAYLOAD_PUBLIC_SERVER_URL ?? 'http://localhost:3000'
-      const link = `${baseUrl}/journal/${ownerId ?? 'inconnu'}/${sowingId}`
-      const senderName =
-        (session.displayName as string | undefined) ?? session.email
-      const subject = `${senderName} a commenté ${sowingName}`
-      const html = buildCommentEmailHtml({
-        toName: updateAuthor.displayName,
-        senderName,
-        sowingName: String(sowingName),
+    if (target.collection === 'sowing-updates') {
+      await notifySowingUpdateComment({
+        sowingUpdateId: target.id,
         body: trimmed,
-        link,
+        senderId: userId,
+        senderName:
+          (session.displayName as string | undefined) ?? session.email,
       })
-      try {
-        await payload.sendEmail({ to: updateAuthor.email, subject, html })
-      } catch {
-        // n'empêche pas le commentaire
-      }
-    }
-
-    // Revalide la version publique + privée.
-    if (update.sowing) {
-      const sId =
-        typeof update.sowing === 'object' ? update.sowing.id : update.sowing
-      revalidatePath(`/journal/[user]/${sId}`, 'page')
-      revalidatePath(`/mon-potager/${sId}`)
+    } else {
+      // Tips : pas d'email (les admins ont la file de modération).
+      // Revalide la page Tip.
+      const tip = await payload.findByID({
+        collection: 'tips',
+        id: target.id,
+        depth: 0,
+        overrideAccess: true,
+      })
+      if (tip?.slug) revalidatePath(`/tips/${tip.slug}`)
     }
 
     return { ok: true, commentId: created.id }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue.'
     return { ok: false, error: message }
+  }
+}
+
+async function notifySowingUpdateComment({
+  sowingUpdateId,
+  body,
+  senderId,
+  senderName,
+}: {
+  sowingUpdateId: number
+  body: string
+  senderId: number
+  senderName: string
+}): Promise<void> {
+  const payload = await getPayloadClient()
+  const update = await payload.findByID({
+    collection: 'sowing-updates',
+    id: sowingUpdateId,
+    depth: 1,
+    overrideAccess: true,
+  })
+
+  const updateAuthor = update.author as
+    | { id?: number | string; email?: string; displayName?: string; reminderOptIn?: boolean }
+    | string
+    | undefined
+  if (
+    updateAuthor &&
+    typeof updateAuthor === 'object' &&
+    updateAuthor.email &&
+    String(updateAuthor.id) !== String(senderId) &&
+    updateAuthor.reminderOptIn !== false
+  ) {
+    const sowing = update.sowing as
+      | { id?: number | string; name?: string; owner?: number | string | { id?: number | string } }
+      | string
+      | number
+    const sowingId =
+      typeof sowing === 'object' ? sowing.id : (sowing as number | string)
+    const ownerRaw = typeof sowing === 'object' ? sowing.owner : undefined
+    const ownerId =
+      typeof ownerRaw === 'object' && ownerRaw
+        ? ownerRaw.id
+        : (ownerRaw as number | string | undefined)
+    const sowingName =
+      typeof sowing === 'object' && sowing.name ? sowing.name : 'ton lot'
+    const baseUrl =
+      process.env.PAYLOAD_PUBLIC_SERVER_URL ?? 'http://localhost:3000'
+    const link = `${baseUrl}/journal/${ownerId ?? 'inconnu'}/${sowingId}`
+    const subject = `${senderName} a commenté ${sowingName}`
+    const html = buildCommentEmailHtml({
+      toName: updateAuthor.displayName,
+      senderName,
+      sowingName: String(sowingName),
+      body,
+      link,
+    })
+    try {
+      await payload.sendEmail({ to: updateAuthor.email, subject, html })
+    } catch {
+      // n'empêche pas le commentaire
+    }
+  }
+
+  if (update.sowing) {
+    const sId =
+      typeof update.sowing === 'object' ? update.sowing.id : update.sowing
+    revalidatePath(`/journal/[user]/${sId}`, 'page')
+    revalidatePath(`/mon-potager/${sId}`)
   }
 }
 

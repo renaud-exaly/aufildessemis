@@ -321,7 +321,7 @@ export default async function SowingDetailPage({
                       />
                     </div>
                     <CommentThread
-                      sowingUpdateId={Number(u.id)}
+                      target={{ collection: 'sowing-updates', id: Number(u.id) }}
                       initialComments={bundle.comments}
                       currentUserId={userId}
                       currentUserRole={session?.role ?? null}

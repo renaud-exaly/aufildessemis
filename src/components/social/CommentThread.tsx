@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 
 import {
   addCommentAction,
+  type CommentTarget,
   deleteCommentAction,
   hideCommentAction,
 } from '@/app/(frontend)/journal/social-actions'
@@ -18,14 +19,14 @@ export type CommentView = {
 }
 
 type Props = {
-  sowingUpdateId: number
+  target: CommentTarget
   initialComments: CommentView[]
   currentUserId: number | string | null
   currentUserRole?: 'admin' | 'moderator' | 'member' | null
 }
 
 export function CommentThread({
-  sowingUpdateId,
+  target,
   initialComments,
   currentUserId,
   currentUserRole,
@@ -45,7 +46,7 @@ export function CommentThread({
     }
     setError(null)
     startTransition(async () => {
-      const res = await addCommentAction(sowingUpdateId, trimmed)
+      const res = await addCommentAction(target, trimmed)
       if (!res.ok) {
         setError(res.error)
         return
