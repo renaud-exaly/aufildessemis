@@ -264,6 +264,25 @@ export interface Plant {
    * URL : /bibliotheque/<slug>
    */
   slug: string;
+  /**
+   * Catégorie principale pour filtrer dans la bibliothèque (une seule).
+   */
+  category?:
+    | (
+        | 'legume-fruit'
+        | 'legume-feuille'
+        | 'legume-racine'
+        | 'legume-bulbe'
+        | 'legume-tige'
+        | 'legume-fleur'
+        | 'aromatique'
+        | 'fleur'
+        | 'petit-fruit'
+        | 'arbre-fruitier'
+        | 'engrais-vert'
+        | 'exotique-interieur'
+      )
+    | null;
   coverImage?: (number | null) | Media;
   gallery?:
     | {
@@ -955,6 +974,7 @@ export interface PlantsSelect<T extends boolean = true> {
   name?: T;
   latinName?: T;
   slug?: T;
+  category?: T;
   coverImage?: T;
   gallery?:
     | T

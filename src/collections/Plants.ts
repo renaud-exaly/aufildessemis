@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, staffOnly } from '@/lib/access'
+import { PLANT_CATEGORIES } from '@/lib/categories'
 import { MONTHS, SOWING_STAGES } from '@/lib/stages'
 
 export const Plants: CollectionConfig = {
@@ -37,6 +38,17 @@ export const Plants: CollectionConfig = {
       unique: true,
       index: true,
       admin: { description: 'URL : /bibliotheque/<slug>' },
+    },
+    {
+      name: 'category',
+      type: 'select',
+      label: 'Catégorie',
+      options: [...PLANT_CATEGORIES],
+      index: true,
+      admin: {
+        description:
+          'Catégorie principale pour filtrer dans la bibliothèque (une seule).',
+      },
     },
     {
       name: 'coverImage',

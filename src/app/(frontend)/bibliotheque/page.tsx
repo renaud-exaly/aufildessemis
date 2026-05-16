@@ -1,5 +1,6 @@
+import { BibliothequeGrid } from '@/components/BibliothequeGrid'
 import { Container } from '@/components/Container'
-import { PlantCard } from '@/components/PlantCard'
+import type { PlantCategory } from '@/lib/categories'
 import { getPayloadClient } from '@/lib/payload'
 
 
@@ -10,12 +11,17 @@ export const metadata = {
 }
 
 export default async function BibliothequePage() {
-  let plants: Array<{ id: string | number; slug: string; name: string }> = []
+  let plants: Array<{
+    id: string | number
+    slug: string
+    name: string
+    category?: PlantCategory | null
+  }> = []
   try {
     const payload = await getPayloadClient()
     const { docs } = await payload.find({
       collection: 'plants',
-      limit: 100,
+      limit: 500,
       sort: 'name',
       depth: 1,
     })
@@ -44,11 +50,7 @@ export default async function BibliothequePage() {
       <section className="py-16">
         <Container>
           {plants.length ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {plants.map((plant, idx) => (
-                <PlantCard key={plant.id} plant={plant} priority={idx < 3} />
-              ))}
-            </div>
+            <BibliothequeGrid plants={plants} />
           ) : (
             <p className="text-center text-ink-soft">
               La bibliothèque est vide pour le moment. Lance{' '}
