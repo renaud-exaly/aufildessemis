@@ -3,30 +3,21 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
-import { SowingWindowBadge } from '@/components/SowingWindowBadge'
+import { MonthTimeline } from '@/components/MonthTimeline'
 
-type Plant = {
-  id: string | number
-  slug: string
-  name: string
-  sowingWindow?: { startMonth?: string; endMonth?: string; note?: string }
-}
-
-type MonthBucket = {
-  value: string
-  label: string
-  short: string
-  plants: Plant[]
-}
+import type { CalendarPlant, MonthBucket } from './page'
 
 export function CalendarPicker({
   months,
   initialMonth,
+  yearRound,
 }: {
   months: MonthBucket[]
   initialMonth: string
+  yearRound: CalendarPlant[]
 }) {
   const [active, setActive] = useState(initialMonth)
+  const [yearRoundOpen, setYearRoundOpen] = useState(false)
   const current = months.find((m) => m.value === active) ?? months[0]
   const isCurrentMonth = active === initialMonth
 
@@ -80,43 +71,124 @@ export function CalendarPicker({
             ) : null}
           </h2>
           <p className="text-sm text-ink-soft">
-            {current.plants.length
-              ? `${current.plants.length} plante${
-                  current.plants.length > 1 ? 's' : ''
-                } à semer`
-              : 'Aucune fenêtre de semis ouverte'}
+            {current.count
+              ? `${current.count} plante${current.count > 1 ? 's' : ''} saisonnière${current.count > 1 ? 's' : ''} à semer`
+              : 'Aucune fenêtre de semis saisonnière ouverte'}
           </p>
         </div>
 
-        {current.plants.length ? (
-          <ul className="mt-6 grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-            {current.plants.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/bibliotheque/${p.slug}`}
-                  className="group flex items-center justify-between gap-3 rounded-soft px-3 py-2.5 transition-colors hover:bg-cream-warm"
-                >
-                  <span className="font-serif text-lg text-green-deep group-hover:text-tomato">
-                    {p.name}
+        {current.groups.length ? (
+          <div className="mt-10 flex flex-col gap-12">
+            {current.groups.map((group) => (
+              <section key={group.category}>
+                <h3 className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-green-sage">
+                  {group.label}
+                  <span className="ml-2 normal-case tracking-normal text-ink-soft/70">
+                    · {group.plants.length}
                   </span>
-                  {p.sowingWindow?.startMonth && p.sowingWindow?.endMonth ? (
-                    <SowingWindowBadge
-                      startMonth={p.sowingWindow.startMonth}
-                      endMonth={p.sowingWindow.endMonth}
-                      highlightActive={false}
-                    />
-                  ) : null}
-                </Link>
-              </li>
+                </h3>
+                <ul className="grid gap-x-8 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.plants.map((p) => (
+                    <li key={p.id}>
+                      <Link
+                        href={`/bibliotheque/${p.slug}`}
+                        className="group flex items-center justify-between gap-3 rounded-soft px-3 py-2.5 transition-colors hover:bg-cream-warm"
+                      >
+                        <span className="flex items-baseline gap-2 min-w-0">
+                          <span className="font-serif text-lg text-green-deep group-hover:text-tomato truncate">
+                            {p.name}
+                          </span>
+                          {p.startsHere ? (
+                            <span
+                              className="shrink-0 rounded-full bg-tomato/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-tomato"
+                              title="La fenêtre de semis démarre ce mois-ci"
+                            >
+                              Démarre
+                            </span>
+                          ) : null}
+                        </span>
+                        <MonthTimeline
+                          startMonth={p.startMonth}
+                          endMonth={p.endMonth}
+                          activeMonth={current.value}
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         ) : (
           <p className="mt-8 max-w-prose text-ink-soft">
             Pause hivernale (ou estivale) — rien à semer ici. Explore un autre
             mois ci-dessus.
           </p>
         )}
+
+        {/* Section repliable : plantes à fenêtre toute l'année */}
+        {yearRound.length ? (
+          <section className="mt-16 border-t border-green-soft/40 pt-8">
+            <button
+              type="button"
+              onClick={() => setYearRoundOpen((v) => !v)}
+              aria-expanded={yearRoundOpen}
+              className="group flex w-full items-center justify-between gap-3 rounded-soft text-left transition-colors hover:text-green-deep"
+            >
+              <span>
+                <span className="font-serif text-xl text-green-deep">
+                  Toujours possibles
+                </span>
+                <span className="ml-2 text-sm text-ink-soft">
+                  · {yearRound.length} plantes à fenêtre ouverte toute
+                  l&apos;année
+                </span>
+              </span>
+              <span
+                aria-hidden
+                className={`shrink-0 text-green-sage transition-transform ${
+                  yearRoundOpen ? 'rotate-180' : ''
+                }`}
+              >
+                <ChevronIcon />
+              </span>
+            </button>
+            {yearRoundOpen ? (
+              <ul className="mt-6 flex flex-wrap gap-x-2 gap-y-2">
+                {yearRound.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/bibliotheque/${p.slug}`}
+                      className="inline-flex rounded-full border border-green-soft/60 bg-cream-warm px-3 py-1.5 text-sm text-green-deep transition-colors hover:border-green-deep hover:bg-cream"
+                    >
+                      {p.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ) : null}
       </div>
     </>
+  )
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   )
 }

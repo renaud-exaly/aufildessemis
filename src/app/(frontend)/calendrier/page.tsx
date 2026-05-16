@@ -1,5 +1,10 @@
 import { CalendarPicker } from './CalendarPicker'
 import { Container } from '@/components/Container'
+import {
+  PLANT_CATEGORIES,
+  PLANT_CATEGORY_LABEL,
+  type PlantCategory,
+} from '@/lib/categories'
 import { MONTHS } from '@/lib/stages'
 import { currentMonth, isInWindow } from '@/lib/months'
 import { getPayloadClient } from '@/lib/payload'
@@ -10,11 +15,34 @@ export const metadata = {
     'Quoi planter à quel mois en Belgique — vue annuelle des fenêtres de semis.',
 }
 
-type Plant = {
+export type CalendarPlant = {
   id: string | number
   slug: string
   name: string
-  sowingWindow?: { startMonth?: string; endMonth?: string; note?: string }
+  category?: PlantCategory | null
+  startMonth: string
+  endMonth: string
+}
+
+export type CalendarPlantInMonth = CalendarPlant & {
+  /** True si la fenêtre de cette plante démarre exactement le mois en cours. */
+  startsHere: boolean
+}
+
+export type CalendarGroup = {
+  category: PlantCategory | 'autres'
+  label: string
+  plants: CalendarPlantInMonth[]
+}
+
+export type MonthBucket = {
+  value: string
+  label: string
+  short: string
+  /** Plantes saisonnières à semer ce mois-ci, regroupées par catégorie. */
+  groups: CalendarGroup[]
+  /** Compte total de plantes saisonnières (toutes catégories confondues). */
+  count: number
 }
 
 const SHORT_MONTHS: Record<string, string> = {
@@ -32,32 +60,82 @@ const SHORT_MONTHS: Record<string, string> = {
   '12': 'Déc',
 }
 
+/** Ordre d'affichage des catégories dans la liste d'un mois. */
+const CATEGORY_ORDER: (PlantCategory | 'autres')[] = [
+  ...PLANT_CATEGORIES.map((c) => c.value),
+  'autres',
+]
+
+function isYearRound(start: string, end: string) {
+  return start === '01' && end === '12'
+}
+
 export default async function CalendrierPage() {
-  let plants: Plant[] = []
+  type Raw = {
+    id: string | number
+    slug: string
+    name: string
+    category?: PlantCategory | null
+    sowingWindow?: { startMonth?: string; endMonth?: string; note?: string }
+  }
+
+  let raw: Raw[] = []
   try {
     const payload = await getPayloadClient()
     const { docs } = await payload.find({
       collection: 'plants',
-      limit: 200,
+      limit: 500,
       sort: 'name',
       depth: 0,
     })
-    plants = docs as Plant[]
+    raw = docs as Raw[]
   } catch {
-    plants = []
+    raw = []
   }
 
-  const month = currentMonth()
-  const buckets = MONTHS.map((m) => ({
-    value: m.value,
-    label: m.label,
-    short: SHORT_MONTHS[m.value] ?? m.label,
-    plants: plants.filter((p) =>
-      p.sowingWindow?.startMonth && p.sowingWindow?.endMonth
-        ? isInWindow(m.value, p.sowingWindow.startMonth, p.sowingWindow.endMonth)
-        : false,
-    ),
-  }))
+  const withWindow: CalendarPlant[] = raw
+    .filter((p) => p.sowingWindow?.startMonth && p.sowingWindow?.endMonth)
+    .map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      category: p.category ?? null,
+      startMonth: p.sowingWindow!.startMonth!,
+      endMonth: p.sowingWindow!.endMonth!,
+    }))
+
+  const seasonal = withWindow.filter((p) => !isYearRound(p.startMonth, p.endMonth))
+  const yearRound = withWindow.filter((p) => isYearRound(p.startMonth, p.endMonth))
+
+  const buckets: MonthBucket[] = MONTHS.map((m) => {
+    const inMonth: CalendarPlantInMonth[] = seasonal
+      .filter((p) => isInWindow(m.value, p.startMonth, p.endMonth))
+      .map((p) => ({ ...p, startsHere: p.startMonth === m.value }))
+
+    const byCategory = new Map<PlantCategory | 'autres', CalendarPlantInMonth[]>()
+    for (const plant of inMonth) {
+      const key = plant.category ?? 'autres'
+      const list = byCategory.get(key) ?? []
+      list.push(plant)
+      byCategory.set(key, list)
+    }
+
+    const groups: CalendarGroup[] = CATEGORY_ORDER.filter((k) =>
+      byCategory.has(k),
+    ).map((k) => ({
+      category: k,
+      label: k === 'autres' ? 'Autres' : PLANT_CATEGORY_LABEL[k],
+      plants: byCategory.get(k)!,
+    }))
+
+    return {
+      value: m.value,
+      label: m.label,
+      short: SHORT_MONTHS[m.value] ?? m.label,
+      groups,
+      count: inMonth.length,
+    }
+  })
 
   return (
     <>
@@ -78,7 +156,11 @@ export default async function CalendrierPage() {
 
       <section className="py-16">
         <Container>
-          <CalendarPicker months={buckets} initialMonth={month} />
+          <CalendarPicker
+            months={buckets}
+            initialMonth={currentMonth()}
+            yearRound={yearRound}
+          />
         </Container>
       </section>
     </>
