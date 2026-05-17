@@ -3,6 +3,11 @@ import type { MetadataRoute } from 'next'
 import { allMonthSlugs } from '@/lib/months'
 import { getPayloadClient } from '@/lib/payload'
 
+// Forcer le rendu à la requête : (1) baseUrl dépend d'une env runtime
+// (PAYLOAD_PUBLIC_SERVER_URL), (2) les listes plantes/tips viennent de Postgres
+// qui n'est pas accessible pendant le build Docker.
+export const dynamic = 'force-dynamic'
+
 const STATIC_PATHS: Array<{
   path: string
   priority: number
