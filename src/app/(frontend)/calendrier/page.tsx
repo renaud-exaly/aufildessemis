@@ -1,141 +1,30 @@
+import Link from 'next/link'
+
 import { CalendarPicker } from './CalendarPicker'
 import { Container } from '@/components/Container'
-import {
-  PLANT_CATEGORIES,
-  PLANT_CATEGORY_LABEL,
-  type PlantCategory,
-} from '@/lib/categories'
+import { getCalendarData } from '@/lib/calendar'
+import { currentMonth, MONTH_SLUGS, monthLabel } from '@/lib/months'
 import { MONTHS } from '@/lib/stages'
-import { currentMonth, isInWindow } from '@/lib/months'
-import { getPayloadClient } from '@/lib/payload'
+
+export const revalidate = 86400
 
 export const metadata = {
-  title: 'Calendrier de semis',
+  title: 'Calendrier de semis — que planter mois par mois en Belgique',
   description:
-    'Quoi planter à quel mois en Belgique — vue annuelle des fenêtres de semis.',
+    'Le calendrier annuel des semis adapté au climat belge. Légumes, herbes et fleurs : quoi planter chaque mois au potager.',
+  alternates: { canonical: '/calendrier' },
 }
 
-export type CalendarPlant = {
-  id: string | number
-  slug: string
-  name: string
-  category?: PlantCategory | null
-  startMonth: string
-  endMonth: string
-}
-
-export type CalendarPlantInMonth = CalendarPlant & {
-  /** True si la fenêtre de cette plante démarre exactement le mois en cours. */
-  startsHere: boolean
-}
-
-export type CalendarGroup = {
-  category: PlantCategory | 'autres'
-  label: string
-  plants: CalendarPlantInMonth[]
-}
-
-export type MonthBucket = {
-  value: string
-  label: string
-  short: string
-  /** Plantes saisonnières à semer ce mois-ci, regroupées par catégorie. */
-  groups: CalendarGroup[]
-  /** Compte total de plantes saisonnières (toutes catégories confondues). */
-  count: number
-}
-
-const SHORT_MONTHS: Record<string, string> = {
-  '01': 'Jan',
-  '02': 'Fév',
-  '03': 'Mars',
-  '04': 'Avr',
-  '05': 'Mai',
-  '06': 'Juin',
-  '07': 'Juil',
-  '08': 'Août',
-  '09': 'Sept',
-  '10': 'Oct',
-  '11': 'Nov',
-  '12': 'Déc',
-}
-
-/** Ordre d'affichage des catégories dans la liste d'un mois. */
-const CATEGORY_ORDER: (PlantCategory | 'autres')[] = [
-  ...PLANT_CATEGORIES.map((c) => c.value),
-  'autres',
-]
-
-function isYearRound(start: string, end: string) {
-  return start === '01' && end === '12'
-}
+// Types réexportés pour compat avec CalendarPicker (qui importe depuis ./page)
+export type {
+  CalendarPlant,
+  CalendarPlantInMonth,
+  CalendarGroup,
+  MonthBucket,
+} from '@/lib/calendar'
 
 export default async function CalendrierPage() {
-  type Raw = {
-    id: string | number
-    slug: string
-    name: string
-    category?: PlantCategory | null
-    sowingWindow?: { startMonth?: string; endMonth?: string; note?: string }
-  }
-
-  let raw: Raw[] = []
-  try {
-    const payload = await getPayloadClient()
-    const { docs } = await payload.find({
-      collection: 'plants',
-      limit: 500,
-      sort: 'name',
-      depth: 0,
-    })
-    raw = docs as Raw[]
-  } catch {
-    raw = []
-  }
-
-  const withWindow: CalendarPlant[] = raw
-    .filter((p) => p.sowingWindow?.startMonth && p.sowingWindow?.endMonth)
-    .map((p) => ({
-      id: p.id,
-      slug: p.slug,
-      name: p.name,
-      category: p.category ?? null,
-      startMonth: p.sowingWindow!.startMonth!,
-      endMonth: p.sowingWindow!.endMonth!,
-    }))
-
-  const seasonal = withWindow.filter((p) => !isYearRound(p.startMonth, p.endMonth))
-  const yearRound = withWindow.filter((p) => isYearRound(p.startMonth, p.endMonth))
-
-  const buckets: MonthBucket[] = MONTHS.map((m) => {
-    const inMonth: CalendarPlantInMonth[] = seasonal
-      .filter((p) => isInWindow(m.value, p.startMonth, p.endMonth))
-      .map((p) => ({ ...p, startsHere: p.startMonth === m.value }))
-
-    const byCategory = new Map<PlantCategory | 'autres', CalendarPlantInMonth[]>()
-    for (const plant of inMonth) {
-      const key = plant.category ?? 'autres'
-      const list = byCategory.get(key) ?? []
-      list.push(plant)
-      byCategory.set(key, list)
-    }
-
-    const groups: CalendarGroup[] = CATEGORY_ORDER.filter((k) =>
-      byCategory.has(k),
-    ).map((k) => ({
-      category: k,
-      label: k === 'autres' ? 'Autres' : PLANT_CATEGORY_LABEL[k],
-      plants: byCategory.get(k)!,
-    }))
-
-    return {
-      value: m.value,
-      label: m.label,
-      short: SHORT_MONTHS[m.value] ?? m.label,
-      groups,
-      count: inMonth.length,
-    }
-  })
+  const { buckets, yearRound } = await getCalendarData()
 
   return (
     <>
@@ -161,6 +50,41 @@ export default async function CalendrierPage() {
             initialMonth={currentMonth()}
             yearRound={yearRound}
           />
+        </Container>
+      </section>
+
+      {/* Liens explicites vers chaque mois — bookmarkables et crawlables. */}
+      <section className="border-t border-green-soft/40 bg-cream-warm py-16">
+        <Container>
+          <h2 className="font-serif text-3xl text-green-deep">
+            Mois par mois
+          </h2>
+          <p className="mt-2 max-w-prose text-sm text-ink-soft">
+            Une page par mois, avec la liste complète des plantes à semer en
+            Belgique.
+          </p>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {MONTHS.map((m) => {
+              const slug = MONTH_SLUGS[m.value]
+              const bucket = buckets.find((b) => b.value === m.value)
+              const count = bucket?.count ?? 0
+              return (
+                <li key={m.value}>
+                  <Link
+                    href={`/calendrier/${slug}`}
+                    className="group flex items-baseline justify-between gap-3 rounded-soft border border-green-soft/60 bg-cream px-4 py-3 transition-colors hover:border-green-deep hover:bg-cream-warm"
+                  >
+                    <span className="font-serif text-lg text-green-deep group-hover:text-tomato">
+                      Que semer en {monthLabel(m.value).toLowerCase()}
+                    </span>
+                    <span className="text-xs text-ink-soft">
+                      {count > 0 ? `${count} plantes` : '—'}
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
         </Container>
       </section>
     </>

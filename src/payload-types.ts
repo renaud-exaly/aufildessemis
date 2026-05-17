@@ -83,6 +83,7 @@ export interface Config {
     'forum-categories': ForumCategory;
     'forum-topics': ForumTopic;
     'forum-replies': ForumReply;
+    'month-intros': MonthIntro;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -106,6 +107,7 @@ export interface Config {
     'forum-categories': ForumCategoriesSelect<false> | ForumCategoriesSelect<true>;
     'forum-topics': ForumTopicsSelect<false> | ForumTopicsSelect<true>;
     'forum-replies': ForumRepliesSelect<false> | ForumRepliesSelect<true>;
+    'month-intros': MonthIntrosSelect<false> | MonthIntrosSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -168,6 +170,10 @@ export interface User {
    * Dernier envoi d'un rappel d'envie. Sert au throttle (max 1 mail / 48h / user).
    */
   lastWishReminderAt?: string | null;
+  /**
+   * Dernier envoi du digest hebdomadaire. Sert de borne pour calculer l'activité de la semaine.
+   */
+  lastDigestSentAt?: string | null;
   bannedAt?: string | null;
   /**
    * Anonymisation RGPD. PII effacée, contenu conservé.
@@ -738,6 +744,43 @@ export interface NewsletterIssue {
   createdAt: string;
 }
 /**
+ * Texte d'intro affiché en haut de chaque page mois du calendrier de semis.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "month-intros".
+ */
+export interface MonthIntro {
+  id: number;
+  /**
+   * Un seul document par mois. Sert de clé.
+   */
+  month: '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
+  /**
+   * Phrase d'accroche (2-3 phrases) qui plante le décor du mois. Affichée sous le H1.
+   */
+  intro: string;
+  /**
+   * Bloc plus long, affiché en bas de page mois — conseils, anecdotes, ce que tu veux mettre en avant.
+   */
+  extra?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -824,6 +867,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'forum-replies';
         value: number | ForumReply;
+      } | null)
+    | ({
+        relationTo: 'month-intros';
+        value: number | MonthIntro;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -880,6 +927,7 @@ export interface UsersSelect<T extends boolean = true> {
   newsletterOptIn?: T;
   reminderOptIn?: T;
   lastWishReminderAt?: T;
+  lastDigestSentAt?: T;
   bannedAt?: T;
   deletedAt?: T;
   updatedAt?: T;
@@ -1204,6 +1252,17 @@ export interface ForumRepliesSelect<T extends boolean = true> {
   author?: T;
   body?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "month-intros_select".
+ */
+export interface MonthIntrosSelect<T extends boolean = true> {
+  month?: T;
+  intro?: T;
+  extra?: T;
   updatedAt?: T;
   createdAt?: T;
 }

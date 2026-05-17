@@ -21,6 +21,7 @@ import { NewsletterIssues } from './collections/NewsletterIssues'
 import { ForumCategories } from './collections/ForumCategories'
 import { ForumTopics } from './collections/ForumTopics'
 import { ForumReplies } from './collections/ForumReplies'
+import { MonthIntros } from './collections/MonthIntros'
 import { buildResendEmailAdapter } from './lib/email-adapter'
 
 const filename = fileURLToPath(import.meta.url)
@@ -85,6 +86,7 @@ export default buildConfig({
     ForumCategories,
     ForumTopics,
     ForumReplies,
+    MonthIntros,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

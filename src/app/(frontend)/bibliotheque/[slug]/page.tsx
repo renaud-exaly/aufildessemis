@@ -12,6 +12,7 @@ import { StageTimeline } from '@/components/StageTimeline'
 import { TipCard } from '@/components/TipCard'
 import { WishButton } from '@/components/WishButton'
 import { getSession } from '@/lib/auth'
+import { formatSowingWindow } from '@/lib/months'
 import { getPayloadClient } from '@/lib/payload'
 
 
@@ -136,9 +137,28 @@ export async function generateMetadata({
   const { slug } = await params
   const plant = await getPlant(slug)
   if (!plant) return { title: 'Plante introuvable' }
+
+  const start = plant.sowingWindow?.startMonth
+  const end = plant.sowingWindow?.endMonth
+  const window = start && end ? formatSowingWindow(start, end) : null
+  const latin = plant.latinName ? ` (${plant.latinName})` : ''
+
+  const title = `Semer ${plant.name.toLowerCase()} en Belgique`
+  const description = window
+    ? `Fiche complète pour cultiver le ${plant.name.toLowerCase()}${latin} au potager en Belgique. Fenêtre de semis : ${window.toLowerCase()}. Étapes, cultures associées et retours de la communauté.`
+    : `Fiche complète pour cultiver le ${plant.name.toLowerCase()}${latin} au potager en Belgique. Étapes, cultures associées et retours de la communauté.`
+
   return {
-    title: plant.name,
-    description: plant.latinName ? `${plant.name} (${plant.latinName})` : plant.name,
+    title,
+    description,
+    alternates: { canonical: `/bibliotheque/${slug}` },
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      url: `/bibliotheque/${slug}`,
+      // og:image auto-injectée via ./opengraph-image.tsx
+    },
   }
 }
 
@@ -171,6 +191,55 @@ export default async function PlantPage({
         (t) => typeof t === 'object' && t !== null && 'slug' in t,
       ) as unknown as ResolvedTip[])
     : []
+
+  // JSON-LD : Breadcrumb + HowTo (étapes typiques) — aide Google à comprendre
+  // la structure et déclenche potentiellement les rich results.
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: '/' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Bibliothèque',
+        item: '/bibliotheque',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: plant.name,
+        item: `/bibliotheque/${slug}`,
+      },
+    ],
+  }
+
+  const stages = Array.isArray(plant.typicalStages) ? plant.typicalStages : []
+  const totalDays = stages.reduce(
+    (sum, s: { daysFromPrevious?: number | null }) =>
+      sum + (typeof s.daysFromPrevious === 'number' ? s.daysFromPrevious : 0),
+    0,
+  )
+  const howToJsonLd = stages.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'HowTo',
+        name: `Comment cultiver ${plant.name.toLowerCase()} en Belgique`,
+        description: plant.sowingWindow?.note ?? undefined,
+        ...(totalDays > 0 ? { totalTime: `P${totalDays}D` } : {}),
+        step: stages.map(
+          (
+            s: { stage: string; tip?: string | null; daysFromPrevious?: number | null },
+            i: number,
+          ) => ({
+            '@type': 'HowToStep',
+            position: i + 1,
+            name: s.stage,
+            text: s.tip ?? s.stage,
+          }),
+        ),
+      }
+    : null
 
   return (
     <>
@@ -327,6 +396,17 @@ export default async function PlantPage({
             </div>
           </Container>
         </section>
+      ) : null}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      {howToJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+        />
       ) : null}
     </>
   )
