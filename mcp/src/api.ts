@@ -247,6 +247,8 @@ export const api = {
     plantIds?: Array<string | number>
     coverImageId?: string | number
     status?: 'draft' | 'published'
+    excerpt?: string
+    category?: string
   }) {
     const data = await request<{ doc: { id: string | number; slug: string } }>(
       '/api/tips',
@@ -259,6 +261,8 @@ export const api = {
           plants: args.plantIds,
           coverImage: args.coverImageId,
           status: args.status ?? 'published',
+          excerpt: args.excerpt,
+          category: args.category,
         },
       },
     )

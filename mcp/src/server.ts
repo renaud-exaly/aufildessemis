@@ -546,6 +546,27 @@ server.registerTool(
         .enum(['draft', 'published'])
         .optional()
         .describe('"published" (défaut) ou "draft"'),
+      excerpt: z
+        .string()
+        .optional()
+        .describe(
+          'Résumé court (140-160 caractères idéal). Sert de description SEO et d\'accroche sous le titre. Recommandé.',
+        ),
+      category: z
+        .enum([
+          'semis',
+          'sol',
+          'arrosage',
+          'maladies',
+          'recolte',
+          'outils',
+          'associations',
+          'saisons',
+        ])
+        .optional()
+        .describe(
+          'Catégorie : semis, sol, arrosage, maladies, recolte, outils, associations, saisons. Recommandé pour apparaître dans les pages /tips/categorie/*.',
+        ),
     },
   },
   async ({
@@ -556,6 +577,8 @@ server.registerTool(
     coverImagePath,
     coverImageAlt,
     status,
+    excerpt,
+    category,
   }) => {
     const finalSlug = slug?.trim() || slugify(title)
 
@@ -595,6 +618,8 @@ server.registerTool(
       plantIds,
       coverImageId,
       status,
+      excerpt,
+      category,
     })
     return ok({
       id: tip.id,
@@ -632,6 +657,25 @@ server.registerTool(
         ),
       coverImageAlt: z.string().optional(),
       status: z.enum(['draft', 'published', 'flagged']).optional(),
+      excerpt: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Résumé court (140-160 char). Passe null pour vider.'),
+      category: z
+        .enum([
+          'semis',
+          'sol',
+          'arrosage',
+          'maladies',
+          'recolte',
+          'outils',
+          'associations',
+          'saisons',
+        ])
+        .nullable()
+        .optional()
+        .describe('Catégorie. Passe null pour retirer.'),
     },
   },
   async ({
@@ -643,6 +687,8 @@ server.registerTool(
     coverImagePath,
     coverImageAlt,
     status,
+    excerpt,
+    category,
   }) => {
     const tip = await api.getTipBySlug(slug)
     if (!tip) return txt(`Aucun tip avec le slug "${slug}".`)
@@ -652,6 +698,8 @@ server.registerTool(
     if (newSlug !== undefined) patch.slug = newSlug
     if (body !== undefined) patch.body = markdownToLexical(body)
     if (status !== undefined) patch.status = status
+    if (excerpt !== undefined) patch.excerpt = excerpt
+    if (category !== undefined) patch.category = category
 
     let skippedPlants: string[] | undefined
     if (plantSlugs !== undefined) {
