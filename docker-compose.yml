@@ -52,7 +52,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # Cron container — frappe /api/cron/reminders chaque jour à 8h (heure container).
+  # Cron container — déclenche :
+  #   - /api/cron/reminders chaque jour à 8h
+  #   - /api/cron/digest le dimanche à 18h (digest hebdo personnalisé)
+  # Heures locales Brussels.
   cron:
     image: alpine:3.20
     restart: unless-stopped
@@ -66,6 +69,7 @@ services:
         cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime
         echo 'Europe/Brussels' > /etc/timezone
         echo '0 8 * * * curl -sf -H \"Authorization: Bearer $$CRON_SECRET\" http://app:3000/api/cron/reminders | tee /proc/1/fd/1' > /etc/crontabs/root
+        echo '0 18 * * 0 curl -sf --max-time 600 -H \"Authorization: Bearer $$CRON_SECRET\" http://app:3000/api/cron/digest | tee /proc/1/fd/1' >> /etc/crontabs/root
         crond -f -l 2
       "
 

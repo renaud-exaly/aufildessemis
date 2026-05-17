@@ -14,6 +14,7 @@ const SELF_OR_STAFF_FIELDS = [
   'newsletterOptIn',
   'reminderOptIn',
   'lastWishReminderAt',
+  'lastDigestSentAt',
   '_verified',
   '_verificationToken',
 ] as const
@@ -72,6 +73,12 @@ export const Users: CollectionConfig = {
     // "Generate API Key"). Utilisé par le MCP local pour publier depuis
     // Claude Code sans login/password. Voir mcp/README.md.
     useAPIKey: true,
+    // 30 jours — défaut Payload est 2h, trop court pour un carnet perso.
+    tokenExpiration: 60 * 60 * 24 * 30,
+    cookies: {
+      sameSite: 'Lax',
+      secure: process.env.NODE_ENV === 'production',
+    },
     verify: {
       generateEmailSubject: () => 'Confirme ton compte — Au fil des semis',
       generateEmailHTML: ({ token, user }) => {
@@ -198,6 +205,16 @@ export const Users: CollectionConfig = {
         readOnly: true,
         description:
           "Dernier envoi d'un rappel d'envie. Sert au throttle (max 1 mail / 48h / user).",
+      },
+    },
+    {
+      name: 'lastDigestSentAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          "Dernier envoi du digest hebdomadaire. Sert de borne pour calculer l'activité de la semaine.",
       },
     },
     {
