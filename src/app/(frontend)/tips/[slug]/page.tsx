@@ -6,6 +6,7 @@ import { CommentThread, type CommentView } from '@/components/social/CommentThre
 import { Container } from '@/components/Container'
 import { ReportLink } from '@/components/ReportLink'
 import { RichText } from '@/components/RichText'
+import { ShareButton } from '@/components/ShareButton'
 import { getSession } from '@/lib/auth'
 import { getPayloadClient } from '@/lib/payload'
 
@@ -112,6 +113,14 @@ export default async function TipPage({
         {author ? (
           <p className="mt-4 text-sm text-ink-soft">par {author}</p>
         ) : null}
+
+        <div className="mt-6">
+          <ShareButton
+            url={`/tips/${slug}`}
+            title={`${tip.title} — Au fil des semis`}
+            text={author ? `Un conseil potager partagé par ${author}.` : 'Un conseil potager à découvrir.'}
+          />
+        </div>
 
         {cover?.url ? (
           <div className="aspect-[16/9] relative mt-10 overflow-hidden rounded-pillow bg-sand-soft">

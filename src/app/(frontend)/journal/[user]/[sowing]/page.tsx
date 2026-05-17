@@ -8,6 +8,7 @@ import { ReactionButton } from '@/components/social/ReactionButton'
 import { Container } from '@/components/Container'
 import { ReportLink } from '@/components/ReportLink'
 import { RichText } from '@/components/RichText'
+import { ShareButton } from '@/components/ShareButton'
 import { getSession } from '@/lib/auth'
 import { SOWING_STAGES } from '@/lib/stages'
 import { getPayloadClient } from '@/lib/payload'
@@ -239,15 +240,24 @@ export default async function SowingDetailPage({
               Stade : {stageLabel(sowing.currentStage)}
             </span>
           ) : null}
-          {!isOwner ? (
-            <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {!isOwner ? (
               <FollowButton
                 sowingId={Number(sowing.id)}
                 initialFollowing={isFollowing}
                 loggedIn={userId !== null}
               />
-            </div>
-          ) : null}
+            ) : null}
+            <ShareButton
+              url={`/journal/${typeof sowing.owner === 'object' && sowing.owner ? sowing.owner.id : sowing.owner}/${sowing.id}`}
+              title={`${sowing.name} — Au fil des semis`}
+              text={
+                ownerName
+                  ? `${ownerName} suit ${sowing.name.toLowerCase()} sur Au fil des semis.`
+                  : `Un carnet de semis à découvrir sur Au fil des semis.`
+              }
+            />
+          </div>
         </Container>
       </section>
 

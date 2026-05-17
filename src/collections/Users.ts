@@ -15,6 +15,7 @@ const SELF_OR_STAFF_FIELDS = [
   'reminderOptIn',
   'lastWishReminderAt',
   'lastDigestSentAt',
+  'onboardedAt',
   '_verified',
   '_verificationToken',
 ] as const
@@ -215,6 +216,16 @@ export const Users: CollectionConfig = {
         readOnly: true,
         description:
           "Dernier envoi du digest hebdomadaire. Sert de borne pour calculer l'activité de la semaine.",
+      },
+    },
+    {
+      name: 'onboardedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          "Date où l'onboarding a été complété. Tant que c'est vide, /mon-potager/bienvenue prend le pas sur /mon-potager au login.",
       },
     },
     {

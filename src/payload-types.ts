@@ -174,6 +174,10 @@ export interface User {
    * Dernier envoi du digest hebdomadaire. Sert de borne pour calculer l'activité de la semaine.
    */
   lastDigestSentAt?: string | null;
+  /**
+   * Date où l'onboarding a été complété. Tant que c'est vide, /mon-potager/bienvenue prend le pas sur /mon-potager au login.
+   */
+  onboardedAt?: string | null;
   bannedAt?: string | null;
   /**
    * Anonymisation RGPD. PII effacée, contenu conservé.
@@ -928,6 +932,7 @@ export interface UsersSelect<T extends boolean = true> {
   reminderOptIn?: T;
   lastWishReminderAt?: T;
   lastDigestSentAt?: T;
+  onboardedAt?: T;
   bannedAt?: T;
   deletedAt?: T;
   updatedAt?: T;

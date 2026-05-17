@@ -6,6 +6,7 @@ import { getMyWishedPlantIds } from '@/app/(frontend)/mon-potager/envies/actions
 import { CompanionsList, type Companion } from '@/components/CompanionsList'
 import { Container } from '@/components/Container'
 import { RichText } from '@/components/RichText'
+import { ShareButton } from '@/components/ShareButton'
 import { SowingCard } from '@/components/SowingCard'
 import { SowingWindowBadge } from '@/components/SowingWindowBadge'
 import { StageTimeline } from '@/components/StageTimeline'
@@ -291,12 +292,17 @@ export default async function PlantPage({
                   ) : null}
                 </div>
               ) : null}
-              <div className="mt-6">
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <WishButton
                   plantId={Number(plant.id)}
                   plantName={plant.name}
                   initialWished={isWished}
                   loggedIn={Boolean(session)}
+                />
+                <ShareButton
+                  url={`/bibliotheque/${slug}`}
+                  title={`Semer ${plant.name.toLowerCase()} en Belgique — Au fil des semis`}
+                  text={`Comment cultiver ${plant.name.toLowerCase()} au potager, climat belge.`}
                 />
               </div>
               {plant.description ? (

@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
+import { shouldShowOnboarding } from './bienvenue/actions'
 import { clearAuthCookie, getSession, setAuthCookie } from '@/lib/auth'
 import { plainTextToLexical } from '@/lib/lexical'
 import { getPayloadClient } from '@/lib/payload'
@@ -85,6 +86,7 @@ export async function signInAction(
     return { error: 'Email et mot de passe requis.' }
   }
 
+  let userId: number | string | null = null
   try {
     const payload = await getPayloadClient()
     const result = await payload.login({
@@ -95,6 +97,7 @@ export async function signInAction(
       return { error: 'Identifiants invalides.' }
     }
     await setAuthCookie(result.token, result.exp)
+    userId = result.user?.id ?? null
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue.'
     if (
@@ -109,6 +112,10 @@ export async function signInAction(
     return { error: 'Identifiants invalides.' }
   }
 
+  // Premier login post-vérification → on glisse vers l'onboarding 60s.
+  if (userId && (await shouldShowOnboarding(userId))) {
+    redirect('/mon-potager/bienvenue')
+  }
   redirect('/mon-potager')
 }
 
