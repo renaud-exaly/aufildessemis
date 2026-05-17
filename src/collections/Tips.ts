@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyone, isAdminOrModerator, staffOnly } from '@/lib/access'
+import { isAdminOrModerator, staffOnly } from '@/lib/access'
+import { TIP_CATEGORIES } from '@/lib/tips'
 
 export const Tips: CollectionConfig = {
   slug: 'tips',
@@ -42,6 +43,26 @@ export const Tips: CollectionConfig = {
       required: true,
       unique: true,
       index: true,
+    },
+    {
+      name: 'excerpt',
+      type: 'textarea',
+      label: 'Résumé',
+      admin: {
+        description:
+          "1-3 phrases. Sert de description SEO (Google + partages sociaux) et d'accroche sous le titre. Idéal : 140-160 caractères.",
+      },
+    },
+    {
+      name: 'category',
+      type: 'select',
+      label: 'Catégorie',
+      options: [...TIP_CATEGORIES],
+      index: true,
+      admin: {
+        description:
+          'Catégorie principale. Détermine la page /tips/categorie/<slug> où ce tip apparaîtra.',
+      },
     },
     {
       name: 'author',

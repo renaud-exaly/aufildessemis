@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 
 import { allMonthSlugs } from '@/lib/months'
 import { getPayloadClient } from '@/lib/payload'
+import { TIP_CATEGORIES } from '@/lib/tips'
 
 // Forcer le rendu à la requête : (1) baseUrl dépend d'une env runtime
 // (PAYLOAD_PUBLIC_SERVER_URL), (2) les listes plantes/tips viennent de Postgres
@@ -70,6 +71,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }))
 
+  // 8 pages de catégorie de tips — long-tail thématique.
+  const tipCategoryEntries: MetadataRoute.Sitemap = TIP_CATEGORIES.map((c) => ({
+    url: `${baseUrl}/tips/categorie/${c.value}`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  }))
+
   const plantEntries: MetadataRoute.Sitemap = plants.map((p) => ({
     url: `${baseUrl}/bibliotheque/${p.slug}`,
     lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
@@ -84,5 +93,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticEntries, ...monthEntries, ...plantEntries, ...tipEntries]
+  return [
+    ...staticEntries,
+    ...monthEntries,
+    ...tipCategoryEntries,
+    ...plantEntries,
+    ...tipEntries,
+  ]
 }

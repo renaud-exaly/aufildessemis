@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Container } from '@/components/Container'
 import { PlantCard } from '@/components/PlantCard'
 import { SowingCard } from '@/components/SowingCard'
+import { TipCard } from '@/components/TipCard'
 import { getPayloadClient } from '@/lib/payload'
 import { currentMonth, isInWindow, monthLabel } from '@/lib/months'
 import { getLatestSowingPhotos, plantCoverFromSowing } from '@/lib/sowings'
@@ -62,10 +63,27 @@ async function getRecentSowings() {
   }
 }
 
+async function getRecentTips() {
+  try {
+    const payload = await getPayloadClient()
+    const { docs } = await payload.find({
+      collection: 'tips',
+      where: { status: { equals: 'published' } },
+      limit: 3,
+      sort: '-updatedAt',
+      depth: 2,
+    })
+    return docs
+  } catch {
+    return []
+  }
+}
+
 export default async function HomePage() {
-  const [activePlants, recentSowings] = await Promise.all([
+  const [activePlants, recentSowings, recentTips] = await Promise.all([
     getActivePlants(),
     getRecentSowings(),
+    getRecentTips(),
   ])
   const photoMap = await getLatestSowingPhotos(
     recentSowings.map((s) => s.id),
@@ -233,6 +251,38 @@ export default async function HomePage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {activePlants.slice(0, 6).map((plant) => (
                 <PlantCard key={plant.id} plant={plant} />
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {/* CARNET D'ASTUCES — tips récents */}
+      {recentTips.length ? (
+        <section className="py-20">
+          <Container>
+            <div className="mb-12 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-4xl text-green-deep md:text-5xl">
+                  Le carnet d&apos;astuces
+                </h2>
+                <p className="mt-3 font-serif text-lg italic text-ink-soft">
+                  Petites trouvailles, méthodes douces.
+                </p>
+              </div>
+              <Link
+                href="/tips"
+                className="text-sm font-medium text-green-deep underline-offset-4 hover:underline"
+              >
+                Tous les tips →
+              </Link>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {recentTips.map((tip) => (
+                <TipCard
+                  key={(tip as { slug: string }).slug}
+                  tip={tip as Parameters<typeof TipCard>[0]['tip']}
+                />
               ))}
             </div>
           </Container>

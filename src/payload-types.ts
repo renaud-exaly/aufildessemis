@@ -384,6 +384,14 @@ export interface Tip {
   id: number;
   title: string;
   slug: string;
+  /**
+   * 1-3 phrases. Sert de description SEO (Google + partages sociaux) et d'accroche sous le titre. Idéal : 140-160 caractères.
+   */
+  excerpt?: string | null;
+  /**
+   * Catégorie principale. Détermine la page /tips/categorie/<slug> où ce tip apparaîtra.
+   */
+  category?: ('semis' | 'sol' | 'arrosage' | 'maladies' | 'recolte' | 'outils' | 'associations' | 'saisons') | null;
   author: number | User;
   coverImage?: (number | null) | Media;
   body: {
@@ -1130,6 +1138,8 @@ export interface SowingUpdatesSelect<T extends boolean = true> {
 export interface TipsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  excerpt?: T;
+  category?: T;
   author?: T;
   coverImage?: T;
   body?: T;
