@@ -100,6 +100,10 @@ export default async function MoisPage({
   const prevSlug = monthSlug(prev)!
   const nextSlug = monthSlug(next)!
 
+  // Schema.org exige des URLs absolues pour `item` / `url` (Google Search Console).
+  const baseUrl =
+    process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
+
   // JSON-LD ItemList : ce que Google adore pour les pages "liste".
   const itemListJsonLd = {
     '@context': 'https://schema.org',
@@ -112,7 +116,7 @@ export default async function MoisPage({
         '@type': 'ListItem',
         position: idx + 1,
         name: p.name,
-        url: `/bibliotheque/${p.slug}`,
+        url: `${baseUrl}/bibliotheque/${p.slug}`,
       })),
   }
 
@@ -120,18 +124,18 @@ export default async function MoisPage({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Accueil', item: '/' },
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${baseUrl}/` },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'Calendrier',
-        item: '/calendrier',
+        item: `${baseUrl}/calendrier`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: label,
-        item: `/calendrier/${mois}`,
+        item: `${baseUrl}/calendrier/${mois}`,
       },
     ],
   }

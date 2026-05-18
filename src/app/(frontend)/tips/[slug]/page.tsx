@@ -228,25 +228,28 @@ export default async function TipPage({
     articleJsonLd.image = cover.url
   }
 
+  // Schema.org exige des URLs absolues pour `item` (Google Search Console).
+  const baseUrl =
+    process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Accueil', item: '/' },
-      { '@type': 'ListItem', position: 2, name: 'Tips & conseils', item: '/tips' },
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${baseUrl}/` },
+      { '@type': 'ListItem', position: 2, name: 'Tips & conseils', item: `${baseUrl}/tips` },
       ...(tip.category
         ? [
             {
               '@type': 'ListItem',
               position: 3,
               name: TIP_CATEGORY_LABEL[tip.category],
-              item: `/tips/categorie/${tip.category}`,
+              item: `${baseUrl}/tips/categorie/${tip.category}`,
             },
             {
               '@type': 'ListItem',
               position: 4,
               name: tip.title,
-              item: `/tips/${slug}`,
+              item: `${baseUrl}/tips/${slug}`,
             },
           ]
         : [
@@ -254,7 +257,7 @@ export default async function TipPage({
               '@type': 'ListItem',
               position: 3,
               name: tip.title,
-              item: `/tips/${slug}`,
+              item: `${baseUrl}/tips/${slug}`,
             },
           ]),
     ],

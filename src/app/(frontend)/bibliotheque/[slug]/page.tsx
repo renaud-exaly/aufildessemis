@@ -195,22 +195,25 @@ export default async function PlantPage({
 
   // JSON-LD : Breadcrumb + HowTo (étapes typiques) — aide Google à comprendre
   // la structure et déclenche potentiellement les rich results.
+  // Schema.org exige des URLs absolues pour `item` (Google Search Console).
+  const baseUrl =
+    process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Accueil', item: '/' },
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${baseUrl}/` },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'Bibliothèque',
-        item: '/bibliotheque',
+        item: `${baseUrl}/bibliotheque`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: plant.name,
-        item: `/bibliotheque/${slug}`,
+        item: `${baseUrl}/bibliotheque/${slug}`,
       },
     ],
   }

@@ -81,6 +81,10 @@ export default async function TipsCategoryPage({
 
   const otherCategories = TIP_CATEGORIES.filter((c) => c.value !== slug)
 
+  // Schema.org exige des URLs absolues pour `item` / `url` (Google Search Console).
+  const baseUrl =
+    process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
+
   const itemListJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -90,7 +94,7 @@ export default async function TipsCategoryPage({
       '@type': 'ListItem',
       position: i + 1,
       name: (t as { title: string }).title,
-      url: `/tips/${(t as { slug: string }).slug}`,
+      url: `${baseUrl}/tips/${(t as { slug: string }).slug}`,
     })),
   }
 
@@ -98,13 +102,13 @@ export default async function TipsCategoryPage({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Accueil', item: '/' },
-      { '@type': 'ListItem', position: 2, name: 'Tips & conseils', item: '/tips' },
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${baseUrl}/` },
+      { '@type': 'ListItem', position: 2, name: 'Tips & conseils', item: `${baseUrl}/tips` },
       {
         '@type': 'ListItem',
         position: 3,
         name: label,
-        item: `/tips/categorie/${slug}`,
+        item: `${baseUrl}/tips/categorie/${slug}`,
       },
     ],
   }
